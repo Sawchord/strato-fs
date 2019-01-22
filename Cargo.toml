@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 fuse = "0.3"
 parking_lot = "0.7"
+libc = "0.2.47"
