@@ -1,5 +1,4 @@
 #![feature(integer_atomics)]
-extern crate evmap;
 extern crate parking_lot;
 extern crate fuse;
 

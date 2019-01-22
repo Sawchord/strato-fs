@@ -2,40 +2,36 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::path::PathBuf;
 
-use parking_lot::Mutex;
+use std::collections::BTreeMap;
 
-use evmap::{ReadHandle, WriteHandle};
+use parking_lot::{Mutex, RwLock};
+
 use fuse::{BackgroundSession, Filesystem};
 
 use crate::handler::Handler;
-type RegistryValue = Arc<Handler>;
+type Registry = Arc<RwLock<BTreeMap<u64, Handler>>>;
 
+struct Driver {
+    registry : Registry,
+    ino_generator : InoGenerator,
+}
 
 struct Engine<'a> {
     mount_point : PathBuf,
-
-    registry : ReadHandle<u64, RegistryValue>,
-    registry_writer : Arc<Mutex<WriteHandle<u64, RegistryValue>>>,
-
+    registry : Registry,
     fuse_session : Option<BackgroundSession<'a>>,
-    ino_generator : InoGenerator,
+
 }
 
 impl<'a> Engine<'a> {
 
     pub fn new(path: PathBuf) -> Self {
-        let (reader, writer) = evmap::new();
-
         // TODO: Add root directory
 
         Engine{
             mount_point : path,
-
-            registry : reader,
-            registry_writer : Arc::new(Mutex::new(writer)),
-
+            registry : Arc::new(RwLock::new(BTreeMap::new())),
             fuse_session : None,
-            ino_generator : InoGenerator::new(),
         }
     }
 
@@ -45,14 +41,21 @@ impl<'a> Engine<'a> {
         let options = [];
 
         let mount_point = self.mount_point.clone();
-        let session = unsafe {fuse::spawn_mount(self, &mount_point, &options).unwrap() };
+
+        let driver = Driver {
+            registry : self.registry.clone(),
+            ino_generator : InoGenerator::new(),
+        };
+
+
+        let session = unsafe {fuse::spawn_mount(driver, &mount_point, &options).unwrap() };
 
         self.fuse_session = Some(session);
     }
 }
 
 
-impl<'a> Filesystem for Engine<'a> {
+impl Filesystem for Driver {
 
 }
 
