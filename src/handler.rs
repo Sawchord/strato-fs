@@ -2,9 +2,11 @@ use std::cmp::{PartialEq, Eq};
 use crate::{Directory, File};
 
 
-struct FileHandler {
+//FIXME: What are the visibility rules here?
+
+pub(crate) struct FileHandler {
     ino : u64,
-    handler: Box<File>
+    handler: Box<dyn File + Send + Sync>
 }
 
 impl PartialEq for FileHandler {
@@ -16,9 +18,9 @@ impl Eq for FileHandler {}
 
 
 
-struct DirHandler {
+pub(crate) struct DirHandler {
     ino : u64,
-    handler: Box<Directory>
+    handler: Box<dyn Directory + Send + Sync>
 }
 
 impl PartialEq for DirHandler {
@@ -30,7 +32,7 @@ impl Eq for DirHandler {}
 
 
 #[derive(PartialEq, Eq)]
-pub enum Handler {
+pub(crate) enum Handler {
     File(FileHandler),
     Dir(DirHandler)
 }
