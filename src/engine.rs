@@ -1,8 +1,10 @@
 use std::sync::Arc;
 use std::collections::BTreeMap;
-use std::path::PathBuf;
-
+use std::path::{Path, PathBuf};
+use std::ffi::OsStr;
 use parking_lot::RwLock;
+
+use std::io;
 
 use fuse::BackgroundSession;
 
@@ -22,44 +24,48 @@ pub struct Engine<'a> {
 
 impl<'a> Engine<'a> {
 
-    pub fn new(path: PathBuf) -> Self {
+    //pub fn new<P: AsRef<Path>>(path: &Path) -> Self {
+    pub fn new(path: &Path) -> Self {
 
-        let engine = Engine{
-            mount_point : path,
+        Engine{
+            mount_point : path.to_path_buf(),
             registry : Arc::new(RwLock::new(BTreeMap::new())),
             ino_generator : Arc::new(InoGenerator::new()),
             fuse_session : None,
-        };
+        }
 
     }
 
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self) -> io::Result<()> {
 
         // TODO: Find a way to use options appropriately
-        let options = [];
+        let options = vec![OsStr::new("-o"), OsStr::new("fsname=TODO")];
         let mount_point = self.mount_point.clone();
 
         let driver = Driver::new(self.registry.clone(), self.ino_generator.clone());
-        let session = unsafe {fuse::spawn_mount(driver, &mount_point, &options).unwrap() };
+        let session = unsafe {fuse::spawn_mount(driver, &mount_point, &options[..])}?;
         self.fuse_session = Some(session);
+        Ok(())
     }
 
 
-    pub fn add_file_handler(&mut self, object: FileImpl) {
+    pub fn add_file_handler(&mut self, object: FileImpl) -> Arc<Handler> {
 
         let ino = self.ino_generator.generate();
-        let handle = Handler::new_file(ino, object);
+        let handle = Arc::new(Handler::new_file(ino, object));
 
-        self.registry.write().insert(ino, Arc::new(handle));
+        self.registry.write().insert(ino, handle.clone());
+        handle
     }
 
-    pub fn add_directory_handler(&mut self, object: DirImpl) {
+    pub fn add_directory_handler(&mut self, object: DirImpl) -> Arc<Handler> {
 
 
         let ino = self.ino_generator.generate();
-        let handle = Handler::new_dir(ino, object);
+        let handle = Arc::new(Handler::new_dir(ino, object));
 
-        self.registry.write().insert(ino, Arc::new(handle));
+        self.registry.write().insert(ino,handle.clone());
+        handle
     }
 }
