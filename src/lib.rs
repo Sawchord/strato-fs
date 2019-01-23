@@ -4,13 +4,23 @@ extern crate fuse;
 extern crate libc;
 
 pub mod engine;
+pub mod driver;
 pub mod handler;
 pub mod controller;
 pub mod link;
 
 mod utils;
 
+use std::sync::Arc;
+use std::collections::BTreeMap;
+
+use parking_lot::RwLock;
+
 use crate::link::DirectoryEntry;
+use crate::handler::Handler;
+
+pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, Arc<Handler>>>>;
+
 
 pub trait Directory {
 

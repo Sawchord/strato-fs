@@ -7,7 +7,7 @@ type DirImpl = Box<dyn Directory + Send + Sync>;
 // FIXME: What are the visibility rules here?
 // FIXME: Are the handler wrappers needed?
 
-pub struct FileHandler {
+pub(crate) struct FileHandler {
     file_impl: FileImpl,
 }
 
@@ -17,7 +17,7 @@ impl FileHandler {
     }
 }
 
-pub struct DirHandler {
+pub(crate) struct DirHandler {
     name : String,
     dir_impl: DirImpl,
 }
@@ -28,7 +28,7 @@ impl DirHandler {
     }
 }
 
-pub enum HandlerDispatcher {
+pub(crate) enum HandlerDispatcher {
     File(FileHandler),
     Dir(DirHandler)
 }
@@ -48,14 +48,6 @@ impl Eq for Handler {}
 
 impl Handler {
 
-    pub(crate) fn dispatch(&self) -> &HandlerDispatcher {
-        &self.dispatch
-    }
-
-    pub(crate) fn ino(&self) -> u64 {
-        self.ino
-    }
-
     pub fn is_directory(&self) -> bool {
         match self.dispatch {
             HandlerDispatcher::Dir(_) => true,
@@ -68,6 +60,15 @@ impl Handler {
             HandlerDispatcher::File(_) => true,
             _ => false,
         }
+    }
+
+
+    pub(crate) fn dispatch(&self) -> &HandlerDispatcher {
+        &self.dispatch
+    }
+
+    pub(crate) fn ino(&self) -> u64 {
+        self.ino
     }
 
 }
