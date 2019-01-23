@@ -9,7 +9,8 @@ use std::io;
 use fuse::BackgroundSession;
 
 use crate::{FileImpl, DirImpl};
-use crate::handler::Handler;
+use crate::handler::{Handler, HandlerDispatcher};
+use crate::controller::Controller;
 use crate::driver::Driver;
 use crate::utils::InoGenerator;
 use crate::Registry;
@@ -55,7 +56,17 @@ impl<'a> Engine<'a> {
         let ino = self.ino_generator.generate();
         let handle = Arc::new(Handler::new_file(ino, object));
 
+        //let x = handle.dispatch();
+
         self.registry.write().insert(ino, handle.clone());
+
+        let controller = Controller::create_from_engine(self, ino, handle.clone());
+        if let HandlerDispatcher::File(ref file) = handle.dispatch() {
+            file.get_object().init(controller)
+        } else {
+            // Can not happen
+            panic!();
+        }
         handle
     }
 
@@ -66,6 +77,24 @@ impl<'a> Engine<'a> {
         let handle = Arc::new(Handler::new_dir(ino, object));
 
         self.registry.write().insert(ino,handle.clone());
+
+        let controller = Controller::create_from_engine(self, ino, handle.clone());
+        if let HandlerDispatcher::Dir(dir) = handle.dispatch() {
+            dir.get_object().init(controller)
+        } else {
+            // Can not happen
+            panic!();
+        }
         handle
+    }
+
+
+
+    pub(crate) fn get_registry(&self) -> Registry {
+        self.registry.clone()
+    }
+
+    pub(crate) fn get_ino_generator(&self) -> Arc<InoGenerator> {
+        self.ino_generator.clone()
     }
 }

@@ -1,6 +1,5 @@
 use std::cmp::{PartialEq, Eq};
 
-use crate::{Directory, File};
 use crate::{FileImpl, DirImpl};
 
 // FIXME: What are the visibility rules here?
@@ -12,8 +11,8 @@ pub(crate) struct FileHandler {
 }
 
 impl FileHandler {
-    pub(crate) fn get_object(&self) -> &FileImpl {
-        &self.object
+    pub(crate) fn get_object(&mut self) -> &mut FileImpl {
+        &mut self.object
     }
 }
 
@@ -26,8 +25,8 @@ pub(crate) struct DirHandler {
 
 impl DirHandler {
 
-    pub(crate) fn get_object(&self) -> &DirImpl {
-        &self.object
+    pub(crate) fn get_object(&mut self) -> &mut DirImpl {
+        &mut self.object
     }
 }
 
@@ -92,8 +91,8 @@ impl Handler {
         }
     }
 
-    pub(crate) fn dispatch(&self) -> &HandlerDispatcher {
-        &self.dispatch
+    pub(crate) fn dispatch(&mut self) -> &mut HandlerDispatcher {
+        &mut self.dispatch
     }
 
     pub(crate) fn ino(&self) -> u64 {

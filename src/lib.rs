@@ -20,6 +20,9 @@ use crate::link::DirectoryEntry;
 use crate::handler::Handler;
 use crate::controller::Controller;
 
+pub use fuse::Request;
+
+
 pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, Arc<Handler>>>>;
 
 pub(crate) type FileImpl = Box<dyn File + Send + Sync>;
@@ -27,7 +30,9 @@ pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;
 
 pub trait Directory {
 
-    fn readdir(&self, controller: Controller) -> Option<Vec<DirectoryEntry>> {
+    fn init(&mut self, controller: Controller) {}
+
+    fn readdir(&mut self, controller: Controller, req: &Request) -> Option<Vec<DirectoryEntry>> {
         None
     }
 
@@ -35,7 +40,9 @@ pub trait Directory {
 
 pub trait File {
 
-    fn read(&self, controller: Controller) -> Option<Vec<u8>> {
+    fn init(&mut self, controller: Controller) {}
+
+    fn read(&mut self, controller: Controller, req: &Request) -> Option<Vec<u8>> {
         None
     }
 

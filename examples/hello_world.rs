@@ -6,21 +6,21 @@ use std::thread;
 use std::env;
 use std::process::Command;
 
-use strato::{File, Directory};
+use strato::{File, Directory, Request};
 use strato::handler::Handler;
 use strato::engine::Engine;
 use strato::controller::Controller;
 use strato::link::DirectoryEntry;
 
 struct StaticDir {
-    handler : Option<Arc<Handler>>,
+    handle: Option<Arc<Handler>>,
     links : Vec<DirectoryEntry>
 }
 
 impl StaticDir {
     fn new() -> Self {
         StaticDir{
-            handler: None,
+            handle: None,
             links : Vec::new(),
         }
     }
@@ -28,10 +28,16 @@ impl StaticDir {
 
 impl Directory for StaticDir {
 
-    fn readdir(&self, controller: Controller) -> Option<Vec<DirectoryEntry>> {
+    fn init(&mut self, controller: Controller) {
+        println!("Init on static dir");
+        self.handle = Some(controller.get_handle());
+    }
+
+    fn readdir(&mut self, controller: Controller, req: &Request) -> Option<Vec<DirectoryEntry>> {
+        println!("Readdir on static dir");
         Some(vec!{
-            DirectoryEntry::new(".".to_string(), self.handler.clone().unwrap()),
-            DirectoryEntry::new("..".to_string(), self.handler.clone().unwrap()),
+            DirectoryEntry::new(".".to_string(), self.handle.clone().unwrap()),
+            DirectoryEntry::new("..".to_string(), self.handle.clone().unwrap()),
         })
     }
 
@@ -65,7 +71,6 @@ fn main() {
 
     let mut dir_handler = Box::new(StaticDir::new());
     let handler = engine.add_directory_handler(dir_handler);
-    //dir_handler.handler = Some(handler);
 
     match engine.start() {
         Err(error) => println!("{}", error),

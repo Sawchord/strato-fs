@@ -59,14 +59,14 @@ impl Filesystem for Driver {
     fn readdir(&mut self, req: &Request, ino: u64, _fh: u64,
                _offset: i64, mut reply: ReplyDirectory) {
 
-        let handler = get_handle!(self, ino, reply);
+        let handle = get_handle!(self, ino, reply);
 
         // Check that the handle references a directory
-        let result = match handler.dispatch() {
+        let result = match handle.dispatch() {
             // Check that this is actually a directory
-            HandlerDispatcher::Dir(ref dir) => {
-                let controller = Controller::create(self, req, ino);
-                dir.get_object().readdir(controller)
+            HandlerDispatcher::Dir(ref mut dir) => {
+                let controller = Controller::create_from_driver(self, ino, handle.clone());
+                dir.get_object().readdir(controller, req)
             },
             _ => {
                 reply.error(ENOTDIR);
@@ -95,12 +95,12 @@ impl Filesystem for Driver {
     fn read(&mut self, req: &Request, ino: u64, _fh: u64,
             _offset: i64, _size: u32, reply: ReplyData) {
 
-        let handler = get_handle!(self, ino, reply);
+        let handle = get_handle!(self, ino, reply);
 
-        let result = match handler.dispatch() {
-            HandlerDispatcher::File(ref file) => {
-                let controller = Controller::create(self, req, ino);
-                file.get_object().read(controller)
+        let result = match handle.dispatch() {
+            HandlerDispatcher::File(ref mut file) => {
+                let controller = Controller::create_from_driver(self, ino, handle.clone());
+                file.get_object().read(controller, req)
             }
             _ => {
                 reply.error(EISDIR);
