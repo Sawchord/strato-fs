@@ -8,7 +8,7 @@ use parking_lot::RwLock;
 use libc::{ENOENT, ENOTDIR};
 use fuse::{BackgroundSession, Filesystem, Request, ReplyDirectory};
 
-use crate::handler::{Handler, FileHandler, DirHandler};
+use crate::handler::{Handler, FileHandler, DirHandler, HandlerDispatcher};
 
 /// The thread safe generator if Inos
 /// Used when spawning a new handler
@@ -36,7 +36,7 @@ type Registry = Arc<RwLock<BTreeMap<u64, Arc<Handler>>>>;
 
 struct Driver {
     registry : Registry,
-    ino_generator : InoGenerator,
+    ino_generator : Arc<InoGenerator>,
 }
 
 struct Engine<'a> {
@@ -67,7 +67,7 @@ impl<'a> Engine<'a> {
 
         let driver = Driver {
             registry : self.registry.clone(),
-            ino_generator : InoGenerator::new(),
+            ino_generator : Arc::new(InoGenerator::new()),
         };
 
 
@@ -99,10 +99,10 @@ impl Filesystem for Driver {
 
         let handler = get_handle!(self, ino, reply);
 
-        // If handle
-        let result = match *handler {
+        // Check that the handle references a directory
+        let result = match handler.dispatch() {
             // Check that this is actually a directory
-            Handler::Dir(ref dir) => {
+            HandlerDispatcher::Dir(ref dir) => {
                 dir.dir_impl().readdir()
             },
             _ => {

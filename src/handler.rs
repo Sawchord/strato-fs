@@ -4,10 +4,10 @@ use crate::{Directory, File};
 type FileImpl = Box<dyn File + Send + Sync>;
 type DirImpl = Box<dyn Directory + Send + Sync>;
 
-//FIXME: What are the visibility rules here?
+// FIXME: What are the visibility rules here?
+// FIXME: Are the handler wrappers needed?
 
 pub struct FileHandler {
-    ino : u64,
     file_impl: FileImpl,
 }
 
@@ -17,17 +17,8 @@ impl FileHandler {
     }
 }
 
-impl PartialEq for FileHandler {
-    fn eq (&self, other : &FileHandler) -> bool {
-        self.ino == other.ino
-    }
-}
-impl Eq for FileHandler {}
-
-
-
 pub struct DirHandler {
-    ino : u64,
+    name : String,
     dir_impl: DirImpl,
 }
 
@@ -37,34 +28,46 @@ impl DirHandler {
     }
 }
 
-impl PartialEq for DirHandler {
-    fn eq (&self, other : &DirHandler) -> bool {
-        self.ino == other.ino
-    }
-}
-impl Eq for DirHandler {}
-
-
-#[derive(PartialEq, Eq)]
-pub enum Handler {
+pub enum HandlerDispatcher {
     File(FileHandler),
     Dir(DirHandler)
 }
 
+pub struct Handler {
+    ino : u64,
+    dispatch : HandlerDispatcher,
+}
+
+impl PartialEq for Handler {
+    fn eq (&self, other : &Handler) -> bool {
+        self.ino == other.ino
+    }
+}
+impl Eq for Handler {}
+
+
 impl Handler {
 
-    pub(crate) fn new_file_handler(file : FileImpl, ino : u64) -> Self {
-        Handler::File(FileHandler {
-            ino,
-            file_impl : file,
-        })
+    pub(crate) fn dispatch(&self) -> &HandlerDispatcher {
+        &self.dispatch
     }
 
-    pub(crate) fn new_dir_handler(dir : DirImpl, ino : u64) -> Self {
-        Handler::Dir(DirHandler {
-            ino,
-            dir_impl : dir,
-        })
+    pub(crate) fn ino(&self) -> u64 {
+        self.ino
+    }
+
+    pub fn is_directory(&self) -> bool {
+        match self.dispatch {
+            HandlerDispatcher::Dir(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_file(&self) -> bool {
+        match self.dispatch {
+            HandlerDispatcher::File(_) => true,
+            _ => false,
+        }
     }
 
 }

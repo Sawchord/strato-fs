@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use fuse::FileType;
 
-use crate::handler::Handler;
+use crate::handler::{Handler, HandlerDispatcher};
 
 pub struct DirectoryEntry {
     name : String,
@@ -12,7 +12,7 @@ pub struct DirectoryEntry {
 
 impl DirectoryEntry {
 
-    /// Creates a directory
+    /// Creates a directory entry
     pub fn new(name : String, handler : Arc<Handler>) -> Self {
         DirectoryEntry {
             name,
@@ -20,14 +20,15 @@ impl DirectoryEntry {
         }
     }
 
+    // TODO: Add attribute functions
 
     fn to_reply(&self) -> (u64, FileType, String) {
-        match *self.handler {
-            Handler::Dir(ref dir) => {
-                (dir.ino, FileType::Directory, self.name)
+        match self.handler.dispatch() {
+            HandlerDispatcher::Dir(ref dir) => {
+                (self.handler.ino(), FileType::Directory, self.name.clone())
             }
-            Handler::File(ref file) => {
-                (file.ino, FileType::RegularFile, self.name)
+            HandlerDispatcher::File(ref file) => {
+                (self.handler.ino(), FileType::RegularFile, self.name.clone())
             }
         }
 
