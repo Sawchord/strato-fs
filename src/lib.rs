@@ -7,11 +7,11 @@ mod engine;
 mod handler;
 pub mod link;
 
-use crate::link::Link;
+use crate::link::DirectoryEntry;
 
 pub trait Directory {
 
-    fn readdir(&self) -> Option<Vec<Link>> {
+    fn readdir(&self) -> Option<Vec<DirectoryEntry>> {
         None
     }
 

@@ -1,14 +1,11 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::path::PathBuf;
-
 use std::collections::BTreeMap;
 
 use parking_lot::RwLock;
 
-
 use libc::{ENOENT, ENOTDIR};
-
 use fuse::{BackgroundSession, Filesystem, Request, ReplyDirectory};
 
 use crate::handler::{Handler, FileHandler, DirHandler};
@@ -66,7 +63,6 @@ impl<'a> Engine<'a> {
 
         // TODO: Find a way to use options appropriately
         let options = [];
-
         let mount_point = self.mount_point.clone();
 
         let driver = Driver {
@@ -76,7 +72,6 @@ impl<'a> Engine<'a> {
 
 
         let session = unsafe {fuse::spawn_mount(driver, &mount_point, &options).unwrap() };
-
         self.fuse_session = Some(session);
     }
 }

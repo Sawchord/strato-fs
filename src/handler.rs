@@ -6,7 +6,7 @@ type DirImpl = Box<dyn Directory + Send + Sync>;
 
 //FIXME: What are the visibility rules here?
 
-pub(crate) struct FileHandler {
+pub struct FileHandler {
     ino : u64,
     file_impl: FileImpl,
 }
@@ -26,7 +26,7 @@ impl Eq for FileHandler {}
 
 
 
-pub(crate) struct DirHandler {
+pub struct DirHandler {
     ino : u64,
     dir_impl: DirImpl,
 }
@@ -46,7 +46,7 @@ impl Eq for DirHandler {}
 
 
 #[derive(PartialEq, Eq)]
-pub(crate) enum Handler {
+pub enum Handler {
     File(FileHandler),
     Dir(DirHandler)
 }
