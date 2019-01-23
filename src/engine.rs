@@ -4,12 +4,8 @@ use std::path::PathBuf;
 
 use parking_lot::RwLock;
 
-//use libc::{ENOENT, ENOTDIR, EPERM};
-use libc::*;
+use fuse::BackgroundSession;
 
-use fuse::{BackgroundSession, Filesystem, Request, ReplyDirectory};
-
-use crate::handler::{Handler, HandlerDispatcher};
 use crate::driver::Driver;
 use crate::utils::InoGenerator;
 use crate::Registry;

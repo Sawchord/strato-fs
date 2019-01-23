@@ -1,14 +1,11 @@
 use std::sync::Arc;
-use std::collections::BTreeMap;
 
-use parking_lot::RwLock;
-
-//use libc::{ENOENT, ENOTDIR, EPERM};
 use libc::*;
 
 use fuse::{Filesystem, Request, ReplyDirectory};
 
 use crate::handler::HandlerDispatcher;
+use crate::controller::Controller;
 use crate::utils::InoGenerator;
 use crate::Registry;
 
@@ -52,13 +49,12 @@ macro_rules! get_handle {
     ];
 }
 
-// TODO: Implement Controller
+
 impl Filesystem for Driver {
 
     // TODO: Implement Offset
-    // TODO: Implement Name
     // TODO: Implement Error Types
-    fn readdir(&mut self, _req: &Request, ino: u64, _fh: u64,
+    fn readdir(&mut self, req: &Request, ino: u64, _fh: u64,
                _offset: i64, mut reply: ReplyDirectory) {
 
         let handler = get_handle!(self, ino, reply);
@@ -67,7 +63,8 @@ impl Filesystem for Driver {
         let result = match handler.dispatch() {
             // Check that this is actually a directory
             HandlerDispatcher::Dir(ref dir) => {
-                dir.dir_impl().readdir()
+                let controller = Controller::create(self, req);
+                dir.dir_impl().readdir(controller, dir.get_name())
             },
             _ => {
                 reply.error(ENOTDIR);

@@ -18,13 +18,14 @@ use parking_lot::RwLock;
 
 use crate::link::DirectoryEntry;
 use crate::handler::Handler;
+use crate::controller::Controller;
 
 pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, Arc<Handler>>>>;
 
 
 pub trait Directory {
 
-    fn readdir(&self) -> Option<Vec<DirectoryEntry>> {
+    fn readdir(&self, controller: Controller, name: String) -> Option<Vec<DirectoryEntry>> {
         None
     }
 

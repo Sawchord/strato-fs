@@ -23,6 +23,11 @@ pub(crate) struct DirHandler {
 }
 
 impl DirHandler {
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
     pub(crate) fn dir_impl(&self) -> &DirImpl {
         &self.dir_impl
     }
