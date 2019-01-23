@@ -1,10 +1,18 @@
-use fuse::FileType;
+use time::Timespec;
+
+use fuse::{FileType, FileAttr};
 
 use crate::handler::{ProtectedHandle, HandleDispatcher};
 
 pub struct DirectoryEntry {
     name : String,
-    handle : ProtectedHandle
+    handle : ProtectedHandle,
+
+    atime: Option<Timespec>,
+    mtime: Option<Timespec>,
+    ctime: Option<Timespec>,
+    crtime: Option<Timespec>,
+
 }
 
 
@@ -15,18 +23,52 @@ impl DirectoryEntry {
         DirectoryEntry {
             name,
             handle : handle.clone(),
+
+            atime: None,
+            mtime: None,
+            ctime: None,
+            crtime: None,
         }
     }
 
     // TODO: Add attribute functions
 
+    pub(crate) fn to_attr(&self) -> FileAttr{
+
+        let file_type = match self.handle.read().dispatch_ref() {
+            HandleDispatcher::Dir(_) => FileType::Directory,
+            HandleDispatcher::File(_) => FileType::RegularFile,
+        };
+
+        let time_none = Timespec::new(1, 0);
+
+        FileAttr {
+            ino: self.handle.read().get_ino(),
+            size: 0,
+            blocks: 1,
+            atime: self.atime.unwrap_or(time_none),
+            mtime: self.mtime.unwrap_or(time_none),
+            ctime: self.ctime.unwrap_or(time_none),
+            crtime: self.crtime.unwrap_or(time_none),
+            kind: file_type,
+            perm: 0o744,
+            nlink: 1,
+            uid: 1000,
+            gid: 1000,
+            rdev: 0,
+            flags: 0,
+        }
+
+    }
+
+
     pub(crate) fn to_reply(&self) -> (u64, FileType, String) {
         match self.handle.read().dispatch_ref() {
             HandleDispatcher::Dir(_) => {
-                (self.handle.read().ino(), FileType::Directory, self.name.clone())
+                (self.handle.read().get_ino(), FileType::Directory, self.name.clone())
             }
             HandleDispatcher::File(_) => {
-                (self.handle.read().ino(), FileType::RegularFile, self.name.clone())
+                (self.handle.read().get_ino(), FileType::RegularFile, self.name.clone())
             }
         }
 

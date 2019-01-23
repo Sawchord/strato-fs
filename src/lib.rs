@@ -12,6 +12,7 @@ pub mod link;
 mod utils;
 
 use std::sync::Arc;
+use std::time::Duration;
 use std::collections::BTreeMap;
 
 use parking_lot::RwLock;
@@ -32,6 +33,11 @@ pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;
 pub trait Directory {
 
     fn init(&mut self, controller: Controller) {}
+
+    fn lookup(&mut self, controller: Controller, req: &Request, name: String)
+        -> Option<(DirectoryEntry, Duration)> {
+        None
+    }
 
     fn readdir(&mut self, controller: Controller, req: &Request) -> Option<Vec<DirectoryEntry>> {
         None

@@ -103,7 +103,7 @@ impl Handle {
         &mut self.dispatch
     }
 
-    pub(crate) fn ino(&self) -> u64 {
+    pub(crate) fn get_ino(&self) -> u64 {
         self.ino
     }
 

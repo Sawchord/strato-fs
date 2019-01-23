@@ -2,6 +2,7 @@ extern crate env_logger;
 
 use std::path::Path;
 use std::thread;
+use std::time::Duration;
 use std::env;
 use std::process::Command;
 
@@ -38,6 +39,17 @@ impl Directory for StaticDir {
             DirectoryEntry::new(".".to_string(), self.handle.clone().unwrap()),
             DirectoryEntry::new("..".to_string(), self.handle.clone().unwrap()),
         })
+    }
+
+    fn lookup(&mut self, controller: Controller, req: &Request, name: String)
+        -> Option<(DirectoryEntry, Duration)> {
+        println!("Lookup on static dir");
+        if name == "." || name == ".." {
+            Some((DirectoryEntry::new(name, self.handle.clone().unwrap()), Duration::new(1, 0)))
+        } else {
+            None
+        }
+
     }
 
 }

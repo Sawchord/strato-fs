@@ -8,6 +8,7 @@ edition = "2018"
 fuse = "0.3"
 parking_lot = "0.7"
 libc = "0.2.47"
+time = "0.1"
 
 
 [dev-dependencies]

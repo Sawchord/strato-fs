@@ -1,8 +1,11 @@
 use std::sync::Arc;
+use std::ffi::OsStr;
 
 use libc::*;
 
-use fuse::{Filesystem, Request, ReplyDirectory, ReplyData};
+use time::Timespec;
+
+use fuse::{Filesystem, Request, ReplyDirectory, ReplyData, ReplyEntry};
 
 use crate::handler::HandleDispatcher;
 use crate::controller::Controller;
@@ -54,18 +57,78 @@ macro_rules! get_handle {
 
 impl Filesystem for Driver {
 
+    fn lookup(&mut self, req: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {
+
+        let handle = get_handle!(self, parent, reply);
+        let controller = Controller::create_from_driver(self, parent, handle.clone());
+        let n = name.to_string_lossy().to_string();
+
+        let result = match handle.write().dispatch() {
+            HandleDispatcher::Dir(ref mut dir) => {
+                dir.get_object().lookup(controller, req, n)
+            }
+            _ => {
+                reply.error(ENOTDIR);
+                return;
+            }
+        };
+
+        match result {
+            None => {
+                reply.error(ENOENT);
+            }
+            Some((entry, duration)) => {
+                // TODO: Fix timespec
+                // TODO: What does Generation do?
+                reply.entry(&Timespec::new(1, 0), &entry.to_attr(), 0);
+            }
+        }
+
+    }
+
+
+    fn read(&mut self, req: &Request, ino: u64, _fh: u64,
+            _offset: i64, _size: u32, reply: ReplyData) {
+
+        let handle = get_handle!(self, ino, reply);
+        let controller = Controller::create_from_driver(self, ino, handle.clone());
+
+        let result = match handle.write().dispatch() {
+            HandleDispatcher::File(ref mut file) => {
+                file.get_object().read(controller, req)
+            }
+            _ => {
+                reply.error(EISDIR);
+            return;
+            }
+        };
+
+        match result {
+            None => {
+                reply.error(EPERM);
+            }
+            Some(vec) => {
+                reply.data(&vec);
+            }
+        }
+
+
+
+    }
+
     // TODO: Implement Offset
     // TODO: Implement Error Types
     fn readdir(&mut self, req: &Request, ino: u64, _fh: u64,
                _offset: i64, mut reply: ReplyDirectory) {
 
         let handle = get_handle!(self, ino, reply);
+        let controller = Controller::create_from_driver(self, ino, handle.clone());
 
         // Check that the handle references a directory
         let result = match handle.write().dispatch() {
             // Check that this is actually a directory
             HandleDispatcher::Dir(ref mut dir) => {
-                let controller = Controller::create_from_driver(self, ino, handle.clone());
+
                 dir.get_object().readdir(controller, req)
             },
             _ => {
@@ -90,37 +153,6 @@ impl Filesystem for Driver {
             }
         }
     }
-
-
-    fn read(&mut self, req: &Request, ino: u64, _fh: u64,
-            _offset: i64, _size: u32, reply: ReplyData) {
-
-        let handle = get_handle!(self, ino, reply);
-
-        let result = match handle.write().dispatch() {
-            HandleDispatcher::File(ref mut file) => {
-                let controller = Controller::create_from_driver(self, ino, handle.clone());
-                file.get_object().read(controller, req)
-            }
-            _ => {
-                reply.error(EISDIR);
-            return;
-            }
-        };
-
-        match result {
-            None => {
-                reply.error(EPERM);
-            }
-            Some(vec) => {
-                reply.data(&vec);
-            }
-        }
-
-
-
-    }
-
 
 
 }
