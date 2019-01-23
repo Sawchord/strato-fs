@@ -1,15 +1,14 @@
 use std::sync::Arc;
 
-use crate::{Registry, RegistryEntry};
+use crate::Registry;
 use crate::engine::Engine;
-use crate::handler::Handler;
+use crate::handler::ProtectedHandle;
 use crate::utils::InoGenerator;
 use crate::driver::Driver;
 
-// TODO: Split controller into controller and request, Request changes, controller stays constant per request
-/// This object gets handed down to functions implementing a File System handler trait, such as
-/// File or Directory. The controller exposes information about the handlers context and can also
-/// be used to manipulate (e.g. delete) the handler.
+/// This object gets handed down to functions implementing a File System Handle trait, such as
+/// File or Directory. The controller exposes information about the Handles context and can also
+/// be used to manipulate (e.g. delete) the Handle.
 pub struct Controller {
 
     this_ino : u64,
@@ -17,17 +16,17 @@ pub struct Controller {
     ino_generator : Arc<InoGenerator>,
     registry : Registry,
 
-    handle : RegistryEntry,
+    handle : ProtectedHandle,
 }
 
 impl Controller {
 
-    pub fn get_handle(&self) -> RegistryEntry {
+    pub fn get_handle(&self) -> ProtectedHandle {
         self.handle.clone()
     }
 
 
-    pub(crate) fn create_from_driver(driver: &Driver, ino: u64, handle : RegistryEntry) -> Self {
+    pub(crate) fn create_from_driver(driver: &Driver, ino: u64, handle : ProtectedHandle) -> Self {
         Controller {
             this_ino : ino,
 
@@ -38,7 +37,7 @@ impl Controller {
         }
     }
 
-    pub(crate) fn create_from_engine(engine: &Engine, ino: u64, handle : RegistryEntry) -> Self {
+    pub(crate) fn create_from_engine(engine: &Engine, ino: u64, handle : ProtectedHandle) -> Self {
         Controller {
             this_ino : ino,
 
@@ -50,5 +49,5 @@ impl Controller {
     }
 
     // TODO: Get ID functions
-    // TODO: Add Handlers to Engine functions
+    // TODO: Add Handles to Engine functions
 }

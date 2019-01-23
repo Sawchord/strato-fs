@@ -1,19 +1,18 @@
 extern crate env_logger;
 
-use std::sync::Arc;
 use std::path::Path;
 use std::thread;
 use std::env;
 use std::process::Command;
 
-use strato::{File, Directory, Request, RegistryEntry};
-use strato::handler::Handler;
+use strato::{Directory, Request};
+use strato::handler::ProtectedHandle;
 use strato::engine::Engine;
 use strato::controller::Controller;
 use strato::link::DirectoryEntry;
 
 struct StaticDir {
-    handle: Option<RegistryEntry>,
+    handle: Option<ProtectedHandle>,
     links : Vec<DirectoryEntry>
 }
 
@@ -69,8 +68,8 @@ fn main() {
 
     let mut engine = Engine::new(&mountpoint);
 
-    let mut dir_handler = Box::new(StaticDir::new());
-    let handler = engine.add_directory_handler(dir_handler);
+    let dir_handle = Box::new(StaticDir::new());
+    engine.add_directory_handle(dir_handle);
 
     match engine.start() {
         Err(error) => println!("{}", error),

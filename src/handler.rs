@@ -1,16 +1,21 @@
 use std::cmp::{PartialEq, Eq};
+use std::sync::Arc;
+
+use parking_lot::RwLock;
 
 use crate::{FileImpl, DirImpl};
 
+pub type ProtectedHandle = Arc<RwLock<Handle>>;
+
 // FIXME: What are the visibility rules here?
-// FIXME: Are the handler wrappers needed?
+// FIXME: Are the Handle wrappers needed?
 // FIXME: Rename to Handle to avoid convusion with the Trait Implementations
 
-pub(crate) struct FileHandler {
+pub(crate) struct FileHandle {
     object: FileImpl,
 }
 
-impl FileHandler {
+impl FileHandle {
     pub(crate) fn get_object(&mut self) -> &mut FileImpl {
         &mut self.object
     }
@@ -19,11 +24,11 @@ impl FileHandler {
 
 
 
-pub(crate) struct DirHandler {
+pub(crate) struct DirHandle {
     object: DirImpl,
 }
 
-impl DirHandler {
+impl DirHandle {
 
     pub(crate) fn get_object(&mut self) -> &mut DirImpl {
         &mut self.object
@@ -31,38 +36,36 @@ impl DirHandler {
 }
 
 
-
-
-pub(crate) enum HandlerDispatcher {
-    File(FileHandler),
-    Dir(DirHandler)
+pub(crate) enum HandleDispatcher {
+    File(FileHandle),
+    Dir(DirHandle)
 }
 
-pub struct Handler {
+pub struct Handle {
     ino : u64,
-    dispatch : HandlerDispatcher,
+    dispatch : HandleDispatcher,
 }
 
-impl PartialEq for Handler {
-    fn eq (&self, other : &Handler) -> bool {
+impl PartialEq for Handle {
+    fn eq (&self, other : &Handle) -> bool {
         self.ino == other.ino
     }
 }
-impl Eq for Handler {}
+impl Eq for Handle {}
 
 
-impl Handler {
+impl Handle {
 
     pub fn is_directory(&self) -> bool {
         match self.dispatch {
-            HandlerDispatcher::Dir(_) => true,
+            HandleDispatcher::Dir(_) => true,
             _ => false,
         }
     }
 
     pub fn is_file(&self) -> bool {
         match self.dispatch {
-            HandlerDispatcher::File(_) => true,
+            HandleDispatcher::File(_) => true,
             _ => false,
         }
     }
@@ -70,10 +73,10 @@ impl Handler {
 
 
     pub(crate) fn new_file(ino: u64, object: FileImpl) -> Self {
-        Handler{
+        Handle{
             ino,
-            dispatch : HandlerDispatcher::File(
-                FileHandler{
+            dispatch : HandleDispatcher::File(
+                FileHandle {
                     object
                 }
             ),
@@ -81,10 +84,10 @@ impl Handler {
     }
 
     pub(crate) fn new_dir(ino: u64, object: DirImpl) -> Self {
-        Handler{
+        Handle{
             ino,
-            dispatch : HandlerDispatcher::Dir(
-                DirHandler{
+            dispatch : HandleDispatcher::Dir(
+                DirHandle {
                     object
                 }
             ),
@@ -92,11 +95,11 @@ impl Handler {
     }
 
 
-    pub(crate) fn dispatch_ref(&self) -> &HandlerDispatcher {
+    pub(crate) fn dispatch_ref(&self) -> &HandleDispatcher {
         &self.dispatch
     }
 
-    pub(crate) fn dispatch(&mut self) -> &mut HandlerDispatcher {
+    pub(crate) fn dispatch(&mut self) -> &mut HandleDispatcher {
         &mut self.dispatch
     }
 

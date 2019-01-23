@@ -17,13 +17,14 @@ use std::collections::BTreeMap;
 use parking_lot::RwLock;
 
 use crate::link::DirectoryEntry;
-use crate::handler::Handler;
+use crate::handler::ProtectedHandle;
 use crate::controller::Controller;
+
 
 pub use fuse::Request;
 
-pub type RegistryEntry = Arc<RwLock<Handler>>;
-pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, RegistryEntry>>>;
+
+pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, ProtectedHandle>>>;
 
 pub(crate) type FileImpl = Box<dyn File + Send + Sync>;
 pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;

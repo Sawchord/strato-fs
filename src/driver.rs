@@ -4,7 +4,7 @@ use libc::*;
 
 use fuse::{Filesystem, Request, ReplyDirectory, ReplyData};
 
-use crate::handler::HandlerDispatcher;
+use crate::handler::HandleDispatcher;
 use crate::controller::Controller;
 use crate::utils::InoGenerator;
 use crate::Registry;
@@ -64,7 +64,7 @@ impl Filesystem for Driver {
         // Check that the handle references a directory
         let result = match handle.write().dispatch() {
             // Check that this is actually a directory
-            HandlerDispatcher::Dir(ref mut dir) => {
+            HandleDispatcher::Dir(ref mut dir) => {
                 let controller = Controller::create_from_driver(self, ino, handle.clone());
                 dir.get_object().readdir(controller, req)
             },
@@ -98,7 +98,7 @@ impl Filesystem for Driver {
         let handle = get_handle!(self, ino, reply);
 
         let result = match handle.write().dispatch() {
-            HandlerDispatcher::File(ref mut file) => {
+            HandleDispatcher::File(ref mut file) => {
                 let controller = Controller::create_from_driver(self, ino, handle.clone());
                 file.get_object().read(controller, req)
             }

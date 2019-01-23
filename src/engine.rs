@@ -8,8 +8,8 @@ use std::io;
 
 use fuse::BackgroundSession;
 
-use crate::{FileImpl, DirImpl, Registry, RegistryEntry};
-use crate::handler::{Handler, HandlerDispatcher};
+use crate::{FileImpl, DirImpl, Registry};
+use crate::handler::{ProtectedHandle, Handle, HandleDispatcher};
 use crate::controller::Controller;
 use crate::driver::Driver;
 use crate::utils::InoGenerator;
@@ -51,17 +51,17 @@ impl<'a> Engine<'a> {
     }
 
 
-    pub fn add_file_handler(&mut self, object: FileImpl) -> RegistryEntry {
+    pub fn add_file_handle(&mut self, object: FileImpl) -> ProtectedHandle {
 
         let ino = self.ino_generator.generate();
-        let handle = Arc::new(RwLock::new(Handler::new_file(ino, object)));
+        let handle = Arc::new(RwLock::new(Handle::new_file(ino, object)));
 
         //let x = handle.dispatch();
 
         self.registry.write().insert(ino, handle.clone());
 
         let controller = Controller::create_from_engine(self, ino, handle.clone());
-        if let HandlerDispatcher::File(ref mut file) = handle.write().dispatch() {
+        if let HandleDispatcher::File(ref mut file) = handle.write().dispatch() {
             file.get_object().init(controller)
         } else {
             // Can not happen
@@ -70,16 +70,16 @@ impl<'a> Engine<'a> {
         handle
     }
 
-    pub fn add_directory_handler(&mut self, object: DirImpl) -> RegistryEntry {
+    pub fn add_directory_handle(&mut self, object: DirImpl) -> ProtectedHandle {
 
 
         let ino = self.ino_generator.generate();
-        let handle = Arc::new(RwLock::new(Handler::new_dir(ino, object)));
+        let handle = Arc::new(RwLock::new(Handle::new_dir(ino, object)));
 
         self.registry.write().insert(ino,handle.clone());
 
         let controller = Controller::create_from_engine(self, ino, handle.clone());
-        if let HandlerDispatcher::Dir(ref mut dir) = handle.write().dispatch() {
+        if let HandleDispatcher::Dir(ref mut dir) = handle.write().dispatch() {
             dir.get_object().init(controller)
         } else {
             // Can not happen
