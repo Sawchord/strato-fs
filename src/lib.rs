@@ -33,6 +33,10 @@ pub trait Directory {
 
 pub trait File {
 
+    fn read(&self,controller: Controller) -> Option<Vec<u8>> {
+        None
+    }
+
 }
 
 

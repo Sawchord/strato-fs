@@ -13,6 +13,8 @@ type Registry = Arc<RwLock<BTreeMap<u64, Arc<Handler>>>>;
 
 pub struct Controller {
 
+    this_ino : u64,
+
     request_id : u64,
     uid : u32,
     gid : u32,
@@ -25,8 +27,10 @@ pub struct Controller {
 
 impl Controller {
 
-    pub(crate) fn create(driver: &Driver, req: &Request) -> Self {
+    pub(crate) fn create(driver: &Driver, req: &Request, ino: u64) -> Self {
         Controller {
+            this_ino : ino,
+
             request_id : req.unique(),
             uid : req.uid(),
             gid : req.gid(),

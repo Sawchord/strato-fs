@@ -8,18 +8,18 @@ type DirImpl = Box<dyn Directory + Send + Sync>;
 // FIXME: Are the handler wrappers needed?
 
 pub(crate) struct FileHandler {
-    file_impl: FileImpl,
+    object: FileImpl,
 }
 
 impl FileHandler {
-    pub(crate) fn file_impl(&self) -> &FileImpl {
-        &self.file_impl
+    pub(crate) fn get_object(&self) -> &FileImpl {
+        &self.object
     }
 }
 
 pub(crate) struct DirHandler {
     name : String,
-    dir_impl: DirImpl,
+    obbject: DirImpl,
 }
 
 impl DirHandler {
@@ -28,8 +28,8 @@ impl DirHandler {
         self.name.clone()
     }
 
-    pub(crate) fn dir_impl(&self) -> &DirImpl {
-        &self.dir_impl
+    pub(crate) fn get_object(&self) -> &DirImpl {
+        &self.obbject
     }
 }
 

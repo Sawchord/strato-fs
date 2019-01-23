@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use libc::*;
 
-use fuse::{Filesystem, Request, ReplyDirectory};
+use fuse::{Filesystem, Request, ReplyDirectory, ReplyData};
 
 use crate::handler::HandlerDispatcher;
 use crate::controller::Controller;
@@ -49,6 +49,8 @@ macro_rules! get_handle {
     ];
 }
 
+// TODO: Implement macros to check if directory or file with appropriate errors
+
 
 impl Filesystem for Driver {
 
@@ -63,8 +65,8 @@ impl Filesystem for Driver {
         let result = match handler.dispatch() {
             // Check that this is actually a directory
             HandlerDispatcher::Dir(ref dir) => {
-                let controller = Controller::create(self, req);
-                dir.dir_impl().readdir(controller, dir.get_name())
+                let controller = Controller::create(self, req, ino);
+                dir.get_object().readdir(controller, dir.get_name())
             },
             _ => {
                 reply.error(ENOTDIR);
@@ -77,15 +79,46 @@ impl Filesystem for Driver {
                 reply.error(EPERM);
             }
             Some(vec) => {
-                let x: i64 = 0;
+                let mut x: i64 = 0;
                 for i in vec {
 
                     let rep = i.to_reply();
                     reply.add(rep.0, x,rep.1, rep.2);
+                    x += 1;
 
                 }
             }
         }
+    }
+
+
+    fn read(&mut self, req: &Request, ino: u64, _fh: u64,
+            _offset: i64, _size: u32, reply: ReplyData) {
+
+        let handler = get_handle!(self, ino, reply);
+
+        let result = match handler.dispatch() {
+            HandlerDispatcher::File(ref file) => {
+                let controller = Controller::create(self, req, ino);
+                file.get_object().read(controller)
+            }
+            _ => {
+                reply.error(EISDIR);
+            return;
+            }
+        };
+
+        match result {
+            None => {
+                reply.error(EPERM);
+            }
+            Some(vec) => {
+                reply.data(&vec);
+            }
+        }
+
+
+
     }
 
 
