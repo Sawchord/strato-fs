@@ -6,14 +6,14 @@ use std::thread;
 use std::env;
 use std::process::Command;
 
-use strato::{File, Directory, Request};
+use strato::{File, Directory, Request, RegistryEntry};
 use strato::handler::Handler;
 use strato::engine::Engine;
 use strato::controller::Controller;
 use strato::link::DirectoryEntry;
 
 struct StaticDir {
-    handle: Option<Arc<Handler>>,
+    handle: Option<RegistryEntry>,
     links : Vec<DirectoryEntry>
 }
 

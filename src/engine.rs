@@ -8,12 +8,12 @@ use std::io;
 
 use fuse::BackgroundSession;
 
-use crate::{FileImpl, DirImpl};
+use crate::{FileImpl, DirImpl, Registry, RegistryEntry};
 use crate::handler::{Handler, HandlerDispatcher};
 use crate::controller::Controller;
 use crate::driver::Driver;
 use crate::utils::InoGenerator;
-use crate::Registry;
+
 
 pub struct Engine<'a> {
     mount_point : PathBuf,
@@ -51,17 +51,17 @@ impl<'a> Engine<'a> {
     }
 
 
-    pub fn add_file_handler(&mut self, object: FileImpl) -> Arc<Handler> {
+    pub fn add_file_handler(&mut self, object: FileImpl) -> RegistryEntry {
 
         let ino = self.ino_generator.generate();
-        let handle = Arc::new(Handler::new_file(ino, object));
+        let handle = Arc::new(RwLock::new(Handler::new_file(ino, object)));
 
         //let x = handle.dispatch();
 
         self.registry.write().insert(ino, handle.clone());
 
         let controller = Controller::create_from_engine(self, ino, handle.clone());
-        if let HandlerDispatcher::File(ref file) = handle.dispatch() {
+        if let HandlerDispatcher::File(ref mut file) = handle.write().dispatch() {
             file.get_object().init(controller)
         } else {
             // Can not happen
@@ -70,16 +70,16 @@ impl<'a> Engine<'a> {
         handle
     }
 
-    pub fn add_directory_handler(&mut self, object: DirImpl) -> Arc<Handler> {
+    pub fn add_directory_handler(&mut self, object: DirImpl) -> RegistryEntry {
 
 
         let ino = self.ino_generator.generate();
-        let handle = Arc::new(Handler::new_dir(ino, object));
+        let handle = Arc::new(RwLock::new(Handler::new_dir(ino, object)));
 
         self.registry.write().insert(ino,handle.clone());
 
         let controller = Controller::create_from_engine(self, ino, handle.clone());
-        if let HandlerDispatcher::Dir(dir) = handle.dispatch() {
+        if let HandlerDispatcher::Dir(ref mut dir) = handle.write().dispatch() {
             dir.get_object().init(controller)
         } else {
             // Can not happen

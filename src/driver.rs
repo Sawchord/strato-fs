@@ -62,7 +62,7 @@ impl Filesystem for Driver {
         let handle = get_handle!(self, ino, reply);
 
         // Check that the handle references a directory
-        let result = match handle.dispatch() {
+        let result = match handle.write().dispatch() {
             // Check that this is actually a directory
             HandlerDispatcher::Dir(ref mut dir) => {
                 let controller = Controller::create_from_driver(self, ino, handle.clone());
@@ -97,7 +97,7 @@ impl Filesystem for Driver {
 
         let handle = get_handle!(self, ino, reply);
 
-        let result = match handle.dispatch() {
+        let result = match handle.write().dispatch() {
             HandlerDispatcher::File(ref mut file) => {
                 let controller = Controller::create_from_driver(self, ino, handle.clone());
                 file.get_object().read(controller, req)

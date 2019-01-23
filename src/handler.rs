@@ -91,6 +91,11 @@ impl Handler {
         }
     }
 
+
+    pub(crate) fn dispatch_ref(&self) -> &HandlerDispatcher {
+        &self.dispatch
+    }
+
     pub(crate) fn dispatch(&mut self) -> &mut HandlerDispatcher {
         &mut self.dispatch
     }

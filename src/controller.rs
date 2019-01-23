@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::Registry;
+use crate::{Registry, RegistryEntry};
 use crate::engine::Engine;
 use crate::handler::Handler;
 use crate::utils::InoGenerator;
@@ -17,17 +17,17 @@ pub struct Controller {
     ino_generator : Arc<InoGenerator>,
     registry : Registry,
 
-    handle : Arc<Handler>,
+    handle : RegistryEntry,
 }
 
 impl Controller {
 
-    pub fn get_handle(&self) -> Arc<Handler> {
+    pub fn get_handle(&self) -> RegistryEntry {
         self.handle.clone()
     }
 
 
-    pub(crate) fn create_from_driver(driver: &Driver, ino: u64, handle : Arc<Handler>) -> Self {
+    pub(crate) fn create_from_driver(driver: &Driver, ino: u64, handle : RegistryEntry) -> Self {
         Controller {
             this_ino : ino,
 
@@ -38,7 +38,7 @@ impl Controller {
         }
     }
 
-    pub(crate) fn create_from_engine(engine: &Engine, ino: u64, handle : Arc<Handler>) -> Self {
+    pub(crate) fn create_from_engine(engine: &Engine, ino: u64, handle : RegistryEntry) -> Self {
         Controller {
             this_ino : ino,
 

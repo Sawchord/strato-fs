@@ -22,8 +22,8 @@ use crate::controller::Controller;
 
 pub use fuse::Request;
 
-
-pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, Arc<Handler>>>>;
+pub type RegistryEntry = Arc<RwLock<Handler>>;
+pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, RegistryEntry>>>;
 
 pub(crate) type FileImpl = Box<dyn File + Send + Sync>;
 pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;
