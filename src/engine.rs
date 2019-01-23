@@ -1,36 +1,16 @@
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::path::PathBuf;
 use std::collections::BTreeMap;
 
 use parking_lot::RwLock;
 
-use libc::{ENOENT, ENOTDIR};
+//use libc::{ENOENT, ENOTDIR, EPERM};
+use libc::*;
+
 use fuse::{BackgroundSession, Filesystem, Request, ReplyDirectory};
 
-use crate::handler::{Handler, FileHandler, DirHandler, HandlerDispatcher};
-
-/// The thread safe generator if Inos
-/// Used when spawning a new handler
-struct InoGenerator {
-    next_ino : AtomicU64
-}
-
-impl InoGenerator {
-
-    fn new() -> Self {
-        InoGenerator{
-            next_ino : AtomicU64::new(1)
-        }
-    }
-
-    fn get(self) -> u64 {
-        self.next_ino.fetch_add(1, Ordering::SeqCst)
-    }
-
-}
-
-
+use crate::handler::{Handler, HandlerDispatcher};
+use crate::utils::InoGenerator;
 
 type Registry = Arc<RwLock<BTreeMap<u64, Arc<Handler>>>>;
 
@@ -39,9 +19,10 @@ struct Driver {
     ino_generator : Arc<InoGenerator>,
 }
 
-struct Engine<'a> {
+pub struct Engine<'a> {
     mount_point : PathBuf,
     registry : Registry,
+    ino_generator : Arc<InoGenerator>,
     fuse_session : Option<BackgroundSession<'a>>,
 
 }
@@ -54,6 +35,7 @@ impl<'a> Engine<'a> {
         Engine{
             mount_point : path,
             registry : Arc::new(RwLock::new(BTreeMap::new())),
+            ino_generator : Arc::new(InoGenerator::new()),
             fuse_session : None,
         }
     }
@@ -67,7 +49,7 @@ impl<'a> Engine<'a> {
 
         let driver = Driver {
             registry : self.registry.clone(),
-            ino_generator : Arc::new(InoGenerator::new()),
+            ino_generator : self.ino_generator.clone(),
         };
 
 
@@ -90,12 +72,14 @@ macro_rules! get_handle {
     ];
 }
 
+// TODO: Implement Controller
 impl Filesystem for Driver {
 
-
+    // TODO: Implement Offset
+    // TODO: Implement Name
+    // TODO: Implement Error Types
     fn readdir(&mut self, _req: &Request, ino: u64, _fh: u64,
-               offset: i64, mut reply: ReplyDirectory) {
-
+               _offset: i64, mut reply: ReplyDirectory) {
 
         let handler = get_handle!(self, ino, reply);
 
@@ -111,9 +95,23 @@ impl Filesystem for Driver {
             },
         };
 
+        match result {
+            None => {
+                reply.error(EPERM);
+            }
+            Some(vec) => {
+                let x: i64 = 0;
+                for i in vec {
 
+                    let rep = i.to_reply();
+                    reply.add(rep.0, x,rep.1, rep.2);
 
+                }
+            }
+        }
     }
+
+
 
 }
 

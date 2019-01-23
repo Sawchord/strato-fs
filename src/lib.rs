@@ -3,9 +3,12 @@ extern crate parking_lot;
 extern crate fuse;
 extern crate libc;
 
-mod engine;
-mod handler;
+pub mod engine;
+pub mod handler;
+pub mod controller;
 pub mod link;
+
+mod utils;
 
 use crate::link::DirectoryEntry;
 

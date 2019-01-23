@@ -22,12 +22,12 @@ impl DirectoryEntry {
 
     // TODO: Add attribute functions
 
-    fn to_reply(&self) -> (u64, FileType, String) {
+    pub(crate) fn to_reply(&self) -> (u64, FileType, String) {
         match self.handler.dispatch() {
-            HandlerDispatcher::Dir(ref dir) => {
+            HandlerDispatcher::Dir(_) => {
                 (self.handler.ino(), FileType::Directory, self.name.clone())
             }
-            HandlerDispatcher::File(ref file) => {
+            HandlerDispatcher::File(_) => {
                 (self.handler.ino(), FileType::RegularFile, self.name.clone())
             }
         }
