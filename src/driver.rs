@@ -66,7 +66,7 @@ impl Filesystem for Driver {
             // Check that this is actually a directory
             HandlerDispatcher::Dir(ref dir) => {
                 let controller = Controller::create(self, req, ino);
-                dir.get_object().readdir(controller, dir.get_name())
+                dir.get_object().readdir(controller)
             },
             _ => {
                 reply.error(ENOTDIR);

@@ -14,7 +14,7 @@ impl InoGenerator {
         }
     }
 
-    pub(crate) fn get(self) -> u64 {
+    pub(crate) fn generate(&self) -> u64 {
         self.next_ino.fetch_add(1, Ordering::SeqCst)
     }
 

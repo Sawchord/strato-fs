@@ -22,10 +22,12 @@ use crate::controller::Controller;
 
 pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, Arc<Handler>>>>;
 
+pub(crate) type FileImpl = Box<dyn File + Send + Sync>;
+pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;
 
 pub trait Directory {
 
-    fn readdir(&self, controller: Controller, name: String) -> Option<Vec<DirectoryEntry>> {
+    fn readdir(&self, controller: Controller) -> Option<Vec<DirectoryEntry>> {
         None
     }
 
@@ -33,7 +35,7 @@ pub trait Directory {
 
 pub trait File {
 
-    fn read(&self,controller: Controller) -> Option<Vec<u8>> {
+    fn read(&self, controller: Controller) -> Option<Vec<u8>> {
         None
     }
 

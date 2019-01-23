@@ -5,12 +5,15 @@ use parking_lot::RwLock;
 
 use fuse::Request;
 
+use crate::Registry;
 use crate::handler::Handler;
 use crate::utils::InoGenerator;
 use crate::driver::Driver;
 
-type Registry = Arc<RwLock<BTreeMap<u64, Arc<Handler>>>>;
-
+// TODO: Split controller into controller and request, Request changes, controller stays constant per request
+/// This object gets handed down to functions implementing a File System handler trait, such as
+/// File or Directory. The controller exposes information about the handlers context and can also
+/// be used to manipulate (e.g. delete) the handler.
 pub struct Controller {
 
     this_ino : u64,

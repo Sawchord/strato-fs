@@ -1,11 +1,11 @@
 use std::cmp::{PartialEq, Eq};
-use crate::{Directory, File};
 
-type FileImpl = Box<dyn File + Send + Sync>;
-type DirImpl = Box<dyn Directory + Send + Sync>;
+use crate::{Directory, File};
+use crate::{FileImpl, DirImpl};
 
 // FIXME: What are the visibility rules here?
 // FIXME: Are the handler wrappers needed?
+// FIXME: Rename to Handle to avoid convusion with the Trait Implementations
 
 pub(crate) struct FileHandler {
     object: FileImpl,
@@ -17,21 +17,22 @@ impl FileHandler {
     }
 }
 
+
+
+
 pub(crate) struct DirHandler {
-    name : String,
-    obbject: DirImpl,
+    object: DirImpl,
 }
 
 impl DirHandler {
 
-    pub fn get_name(&self) -> String {
-        self.name.clone()
-    }
-
     pub(crate) fn get_object(&self) -> &DirImpl {
-        &self.obbject
+        &self.object
     }
 }
+
+
+
 
 pub(crate) enum HandlerDispatcher {
     File(FileHandler),
@@ -67,6 +68,29 @@ impl Handler {
         }
     }
 
+
+
+    pub(crate) fn new_file(ino: u64, object: FileImpl) -> Self {
+        Handler{
+            ino,
+            dispatch : HandlerDispatcher::File(
+                FileHandler{
+                    object
+                }
+            ),
+        }
+    }
+
+    pub(crate) fn new_dir(ino: u64, object: DirImpl) -> Self {
+        Handler{
+            ino,
+            dispatch : HandlerDispatcher::Dir(
+                DirHandler{
+                    object
+                }
+            ),
+        }
+    }
 
     pub(crate) fn dispatch(&self) -> &HandlerDispatcher {
         &self.dispatch
