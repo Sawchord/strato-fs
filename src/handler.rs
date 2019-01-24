@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use parking_lot::RwLock;
 
-use crate::{FileImpl, DirImpl};
+use crate::{NodeImpl, FileImpl, DirImpl};
 
 pub type ProtectedHandle = Arc<RwLock<Handle>>;
 
@@ -23,13 +23,11 @@ impl FileHandle {
 
 
 
-
 pub(crate) struct DirHandle {
     object: DirImpl,
 }
 
 impl DirHandle {
-
     pub(crate) fn get_object(&mut self) -> &mut DirImpl {
         &mut self.object
     }
@@ -56,6 +54,7 @@ impl Eq for Handle {}
 
 impl Handle {
 
+    // TODO: Do we need these?
     pub fn is_directory(&self) -> bool {
         match self.dispatch {
             HandleDispatcher::Dir(_) => true,
@@ -69,6 +68,7 @@ impl Handle {
             _ => false,
         }
     }
+
 
 
 
@@ -102,6 +102,14 @@ impl Handle {
     pub(crate) fn dispatch(&mut self) -> &mut HandleDispatcher {
         &mut self.dispatch
     }
+
+
+    //pub(crate) fn get_node(&mut self) -> &mut NodeImpl {
+    //    match self.dispatch {
+    //        HandleDispatcher::Dir(ref mut dir) => &mut dir.object as &mut NodeImpl,
+    //        HandleDispatcher::File(ref mut file) => &mut file.object as &mut NodeImpl,
+    //    }
+    //}
 
     pub(crate) fn get_ino(&self) -> u64 {
         self.ino

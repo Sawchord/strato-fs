@@ -41,8 +41,10 @@ impl<'a> Engine<'a> {
     pub fn start(&mut self) -> io::Result<()> {
 
         // TODO: Find a way to use options appropriately
-        let options = vec![OsStr::new("-o"), OsStr::new("fsname=TODO")];
+        //let options = vec![OsStr::new("-o"), OsStr::new("fsname=TODO")];
         let mount_point = self.mount_point.clone();
+        let options = [];
+
 
         let driver = Driver::new(self.registry.clone(), self.ino_generator.clone());
         let session = unsafe {fuse::spawn_mount(driver, &mount_point, &options[..])}?;
@@ -55,8 +57,6 @@ impl<'a> Engine<'a> {
 
         let ino = self.ino_generator.generate();
         let handle = Arc::new(RwLock::new(Handle::new_file(ino, object)));
-
-        //let x = handle.dispatch();
 
         self.registry.write().insert(ino, handle.clone());
 

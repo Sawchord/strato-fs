@@ -5,11 +5,12 @@ use libc::*;
 
 use time::Timespec;
 
-use fuse::{Filesystem, Request, ReplyDirectory, ReplyData, ReplyEntry};
+use fuse::{Filesystem, Request, ReplyDirectory, ReplyData, ReplyEntry, ReplyAttr};
 
 use crate::handler::HandleDispatcher;
 use crate::controller::Controller;
 use crate::utils::InoGenerator;
+use crate::link::DirectoryEntry;
 use crate::Registry;
 
 
@@ -39,7 +40,7 @@ impl Driver {
 
 
 /// This macro looks up the ino from the registry and returns the corresponding handler
-/// It sends an ENOENT to the FUSE driver, if the ino does not exist
+/// It sends an `ENOENT` to the FUSE driver, if the ino does not exist.
 macro_rules! get_handle {
     ($driver:ident, $ino: ident, $reply:ident) => [
         match $driver.registry.read().get(&$ino) {
@@ -85,7 +86,29 @@ impl Filesystem for Driver {
 
     }
 
+    fn getattr(&mut self, req: &Request, ino: u64, reply: ReplyAttr) {
 
+        let handle = get_handle!(self, ino, reply);
+        let base_entry = DirectoryEntry::new("".to_string(), handle.clone());
+        let controller = Controller::create_from_driver(self, ino, handle.clone());
+
+        let result = match handle.write().dispatch() {
+            HandleDispatcher::Dir(ref mut dir) => {
+                dir.get_object().read_attributes(controller, req, base_entry)
+            }
+            HandleDispatcher::File(ref mut file) => {
+                file.get_object().read_attributes(controller, req, base_entry)
+            }
+        };
+
+        match result {
+            None => reply.error(EPERM),
+            Some(entry) => reply.attr(&entry.get_ttl(), &entry.to_attr())
+        }
+
+    }
+
+    // TODO: Implement correct behaviour of offset
     fn read(&mut self, req: &Request, ino: u64, _fh: u64,
             _offset: i64, _size: u32, reply: ReplyData) {
 
@@ -115,10 +138,9 @@ impl Filesystem for Driver {
 
     }
 
-    // TODO: Implement Offset
     // TODO: Implement Error Types
     fn readdir(&mut self, req: &Request, ino: u64, _fh: u64,
-               _offset: i64, mut reply: ReplyDirectory) {
+               offset: i64, mut reply: ReplyDirectory) {
 
         let handle = get_handle!(self, ino, reply);
         let controller = Controller::create_from_driver(self, ino, handle.clone());
@@ -127,7 +149,6 @@ impl Filesystem for Driver {
         let result = match handle.write().dispatch() {
             // Check that this is actually a directory
             HandleDispatcher::Dir(ref mut dir) => {
-
                 dir.get_object().readdir(controller, req)
             },
             _ => {
@@ -141,14 +162,18 @@ impl Filesystem for Driver {
                 reply.error(EPERM);
             }
             Some(vec) => {
-                let mut x: i64 = 0;
-                for i in vec {
+                let to_skip = if offset == 0 { offset } else { offset + 1 } as usize;
+                for (i, entry) in vec.into_iter().enumerate().skip(to_skip) {
 
-                    let rep = i.to_reply();
-                    reply.add(rep.0, x,rep.1, rep.2);
-                    x += 1;
+                    let rep = entry.to_reply();
+
+                    println!("adding reply {} {} Filetype {}", rep.0, i, rep.2);
+                    println!("using offset {}", offset);
+
+                    reply.add(rep.0, i as i64,rep.1, rep.2);
 
                 }
+                reply.ok();
             }
         }
     }

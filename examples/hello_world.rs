@@ -2,11 +2,13 @@ extern crate env_logger;
 
 use std::path::Path;
 use std::thread;
-use std::time::Duration;
 use std::env;
 use std::process::Command;
 
-use strato::{Directory, Request};
+use time;
+use time::Duration;
+
+use strato::{Node, Directory, Request};
 use strato::handler::ProtectedHandle;
 use strato::engine::Engine;
 use strato::controller::Controller;
@@ -26,12 +28,26 @@ impl StaticDir {
     }
 }
 
-impl Directory for StaticDir {
+impl Node for StaticDir {
 
     fn init(&mut self, controller: Controller) {
         println!("Init on static dir");
         self.handle = Some(controller.get_handle());
     }
+
+    fn read_attributes(&mut self, controller: Controller, req: &Request,
+                       mut attr: DirectoryEntry) -> Option<DirectoryEntry> {
+        println!("Requested attributes on static dir");
+
+        attr.mtime(time::get_time());
+        attr.ttl(time::get_time() + time::Duration::seconds(20));
+
+        Some(attr)
+    }
+
+}
+
+impl Directory for StaticDir {
 
     fn readdir(&mut self, controller: Controller, req: &Request) -> Option<Vec<DirectoryEntry>> {
         println!("Readdir on static dir");
@@ -56,7 +72,6 @@ impl Directory for StaticDir {
 
 fn main() {
     env_logger::init();
-
 
     let mountpoint = Path::new(&env::args_os().nth(1).unwrap()).to_owned();
     let mountpoint_str = mountpoint.to_str().unwrap();

@@ -27,12 +27,26 @@ pub use fuse::Request;
 
 pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, ProtectedHandle>>>;
 
+pub(crate) type NodeImpl = Box<dyn Node + Send + Sync>;
 pub(crate) type FileImpl = Box<dyn File + Send + Sync>;
 pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;
 
-pub trait Directory {
+
+/// This trait contains all the base functions, that need to be implemented for the object
+/// to behave as a node in the file system.
+pub trait Node {
 
     fn init(&mut self, controller: Controller) {}
+
+    fn read_attributes(&mut self, controller: Controller, req: &Request,
+                       mut attr: DirectoryEntry) -> Option<DirectoryEntry> {
+        None
+    }
+
+}
+
+
+pub trait Directory: Node {
 
     fn lookup(&mut self, controller: Controller, req: &Request, name: String)
         -> Option<DirectoryEntry> {
@@ -45,9 +59,9 @@ pub trait Directory {
 
 }
 
-pub trait File {
+pub trait File: Node {
 
-    fn init(&mut self, controller: Controller) {}
+    //fn init(&mut self, controller: Controller) {}
 
     fn read(&mut self, controller: Controller, req: &Request) -> Option<Vec<u8>> {
         None
