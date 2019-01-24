@@ -56,7 +56,7 @@ impl Node for StaticDir {
         self.write().handle = Some(controller.get_handle());
     }
 
-    fn read_attributes(&mut self, controller: Controller, req: &Request,
+    fn read_attributes(&mut self, _controller: Controller, _req: &Request,
                        mut attr: DirectoryEntry) -> Option<DirectoryEntry> {
         println!("Requested attributes on static dir");
 
@@ -70,7 +70,7 @@ impl Node for StaticDir {
 
 impl Directory for StaticDir {
 
-    fn readdir(&mut self, controller: Controller, req: &Request) -> Option<Vec<DirectoryEntry>> {
+    fn readdir(&mut self, _controller: Controller, _req: &Request) -> Option<Vec<DirectoryEntry>> {
         println!("Readdir on static dir");
         let mut vec = vec!{
                 DirectoryEntry::new(".".to_string(), self.read().handle.clone().unwrap()),
@@ -80,7 +80,7 @@ impl Directory for StaticDir {
         Some(vec)
     }
 
-    fn lookup(&mut self, controller: Controller, req: &Request, name: String)
+    fn lookup(&mut self, _controller: Controller, _req: &Request, name: String)
         -> Option<DirectoryEntry> {
         println!("Lookup on static dir, name: {}", name);
         if name == "." || name == ".." {
@@ -120,7 +120,7 @@ impl Node for StaticFile {
         self.handle = Some(controller.get_handle());
     }
 
-    fn read_attributes(&mut self, controller: Controller, req: &Request,
+    fn read_attributes(&mut self, _controller: Controller, _req: &Request,
                        mut attr: DirectoryEntry) -> Option<DirectoryEntry> {
         println!("Requested attributes on static file");
 
@@ -136,7 +136,7 @@ impl Node for StaticFile {
 
 impl File for StaticFile {
 
-    fn read(&mut self, controller: Controller, req: &Request) -> Option<Vec<u8>> {
+    fn read(&mut self, _controller: Controller, _req: &Request) -> Option<Vec<u8>> {
         println!("Request read on static file");
         Some(self.text.clone().into_bytes())
     }
@@ -179,6 +179,9 @@ fn main() {
 
     let text_handle = engine.add_file(StaticFile::new("Hello World\n".to_string()));
     root.add(DirectoryEntry::new("hello.txt".to_string(), text_handle));
+
+    let text_handle = engine.add_file(StaticFile::new("Goodbeye World\n".to_string()));
+    root.add(DirectoryEntry::new("goodbye.txt".to_string(), text_handle));
 
 
     match engine.start() {

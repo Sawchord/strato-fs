@@ -4,7 +4,7 @@ use std::fmt;
 
 use parking_lot::RwLock;
 
-use crate::{NodeImpl, FileImpl, DirImpl};
+use crate::{FileImpl, DirImpl};
 
 pub type ProtectedHandle = Arc<RwLock<Handle>>;
 

@@ -105,7 +105,7 @@ impl Filesystem for Driver {
 
     }
 
-    // TODO: Implement correct behaviour of offset
+    // TODO: Implement correct behaviour of offset and size... how to handle streaming?
     fn read(&mut self, req: &Request, ino: u64, _fh: u64,
             offset: i64, size: u32, reply: ReplyData) {
 
