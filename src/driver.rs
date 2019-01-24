@@ -3,8 +3,6 @@ use std::ffi::OsStr;
 
 use libc::*;
 
-use time::Timespec;
-
 use fuse::{Filesystem, Request, ReplyDirectory, ReplyData, ReplyEntry, ReplyAttr};
 
 use crate::handler::HandleDispatcher;
@@ -110,7 +108,7 @@ impl Filesystem for Driver {
 
     // TODO: Implement correct behaviour of offset
     fn read(&mut self, req: &Request, ino: u64, _fh: u64,
-            _offset: i64, _size: u32, reply: ReplyData) {
+            offset: i64, size: u32, reply: ReplyData) {
 
         let handle = get_handle!(self, ino, reply);
         let controller = Controller::create_from_driver(self, ino, handle.clone());
@@ -130,7 +128,8 @@ impl Filesystem for Driver {
                 reply.error(EPERM);
             }
             Some(vec) => {
-                reply.data(&vec);
+                println!("Request params: Offset {} Size {}", offset, size);
+                reply.data(&vec[offset as usize..]);
             }
         }
 
@@ -138,7 +137,6 @@ impl Filesystem for Driver {
 
     }
 
-    // TODO: Implement Error Types
     fn readdir(&mut self, req: &Request, ino: u64, _fh: u64,
                offset: i64, mut reply: ReplyDirectory) {
 
@@ -166,10 +164,6 @@ impl Filesystem for Driver {
                 for (i, entry) in vec.into_iter().enumerate().skip(to_skip) {
 
                     let rep = entry.to_reply();
-
-                    println!("adding reply {} {} Filetype {}", rep.0, i, rep.2);
-                    println!("using offset {}", offset);
-
                     reply.add(rep.0, i as i64,rep.1, rep.2);
 
                 }

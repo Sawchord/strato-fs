@@ -1,38 +1,59 @@
 extern crate env_logger;
 
+use std::sync::Arc;
+use std::ops::Deref;
 use std::path::Path;
 use std::thread;
 use std::env;
 use std::process::Command;
 
-use time;
-use time::Duration;
+use parking_lot::RwLock;
 
-use strato::{Node, Directory, Request};
+use time;
+
+use strato::{Node, Directory, File, Request};
 use strato::handler::ProtectedHandle;
 use strato::engine::Engine;
 use strato::controller::Controller;
 use strato::link::DirectoryEntry;
 
-struct StaticDir {
+struct StaticDirInner {
     handle: Option<ProtectedHandle>,
     links : Vec<DirectoryEntry>
 }
 
-impl StaticDir {
-    fn new() -> Self {
-        StaticDir{
-            handle: None,
-            links : Vec::new(),
-        }
+#[derive(Clone)]
+struct StaticDir(Arc<RwLock<StaticDirInner>>);
+
+impl Deref for StaticDir {
+    type Target = Arc<RwLock<StaticDirInner>>;
+    fn deref(&self) -> &Arc<RwLock<StaticDirInner>> {
+        &self.0
     }
+}
+
+impl StaticDir {
+
+    fn new() -> Self {
+        StaticDir(Arc::new(RwLock::new(
+            StaticDirInner{
+                handle: None,
+                links : Vec::new(),
+            }
+        )))
+    }
+
+    fn add(&mut self, link: DirectoryEntry) {
+        self.write().links.push(link);
+    }
+
 }
 
 impl Node for StaticDir {
 
     fn init(&mut self, controller: Controller) {
         println!("Init on static dir");
-        self.handle = Some(controller.get_handle());
+        self.write().handle = Some(controller.get_handle());
     }
 
     fn read_attributes(&mut self, controller: Controller, req: &Request,
@@ -51,24 +72,76 @@ impl Directory for StaticDir {
 
     fn readdir(&mut self, controller: Controller, req: &Request) -> Option<Vec<DirectoryEntry>> {
         println!("Readdir on static dir");
-        Some(vec!{
-            DirectoryEntry::new(".".to_string(), self.handle.clone().unwrap()),
-            DirectoryEntry::new("..".to_string(), self.handle.clone().unwrap()),
-        })
+        let mut vec = vec!{
+                DirectoryEntry::new(".".to_string(), self.read().handle.clone().unwrap()),
+                DirectoryEntry::new("..".to_string(), self.read().handle.clone().unwrap()),
+            };
+        vec.append(&mut self.read().links.clone());
+        Some(vec)
     }
 
     fn lookup(&mut self, controller: Controller, req: &Request, name: String)
         -> Option<DirectoryEntry> {
         println!("Lookup on static dir, name: {}", name);
         if name == "." || name == ".." {
-            Some(DirectoryEntry::new(name, self.handle.clone().unwrap()))
+            return Some(DirectoryEntry::new(name, self.read().handle.clone().unwrap()))
         } else {
-            None
-        }
+            for x in self.read().links.iter() {
+                if x.get_name() == name {
+                    return Some(x.clone());
+                }
+            }
+        };
+        None
+    }
+}
 
+
+struct StaticFile {
+    handle: Option<ProtectedHandle>,
+    text: String,
+}
+
+impl StaticFile {
+
+    fn new(text: String) -> Self {
+        StaticFile{
+            handle: None,
+            text,
+        }
     }
 
 }
+
+impl Node for StaticFile {
+
+    fn init(&mut self, controller: Controller) {
+        println!("Init on static file");
+        self.handle = Some(controller.get_handle());
+    }
+
+    fn read_attributes(&mut self, controller: Controller, req: &Request,
+                       mut attr: DirectoryEntry) -> Option<DirectoryEntry> {
+        println!("Requested attributes on static file");
+
+        attr.mtime(time::get_time());
+        attr.ttl(time::get_time() + time::Duration::seconds(20));
+
+        Some(attr)
+    }
+
+}
+
+impl File for StaticFile {
+
+    fn read(&mut self, controller: Controller, req: &Request) -> Option<Vec<u8>> {
+        println!("Request read on static file");
+        Some(self.text.clone().into_bytes())
+    }
+
+}
+
+
 
 fn main() {
     env_logger::init();
@@ -93,10 +166,18 @@ fn main() {
         println!("{} was already unmounted", mountpoint_str);
     }
 
-    let mut engine = Engine::new(&mountpoint);
 
-    let dir_handle = Box::new(StaticDir::new());
-    engine.add_directory_handle(dir_handle);
+
+    // This is the actual user code
+    // This should make a nice API someday
+
+    let mut root = StaticDir::new();
+    let mut engine = Engine::new(&mountpoint, root.clone());
+
+
+    let text_handle = engine.add_file_handle(StaticFile::new("Hello World\n".to_string()));
+    root.add(DirectoryEntry::new("hello.txt".to_string(), text_handle));
+
 
     match engine.start() {
         Err(error) => println!("{}", error),

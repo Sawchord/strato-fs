@@ -1,14 +1,13 @@
 use std::sync::Arc;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::ffi::OsStr;
 use parking_lot::RwLock;
 
 use std::io;
 
 use fuse::BackgroundSession;
 
-use crate::{FileImpl, DirImpl, Registry};
+use crate::{File, Directory, Registry};
 use crate::handler::{ProtectedHandle, Handle, HandleDispatcher};
 use crate::controller::Controller;
 use crate::driver::Driver;
@@ -25,23 +24,25 @@ pub struct Engine<'a> {
 
 impl<'a> Engine<'a> {
 
-    //pub fn new<P: AsRef<Path>>(path: &Path) -> Self {
-    pub fn new(path: &Path) -> Self {
+    pub fn new<T: 'static>(path: &Path, root: T) -> Self
+    where T: Directory + Send + Sync {
 
-        Engine{
+        let mut engine = Engine{
             mount_point : path.to_path_buf(),
             registry : Arc::new(RwLock::new(BTreeMap::new())),
             ino_generator : Arc::new(InoGenerator::new()),
             fuse_session : None,
-        }
+        };
 
+        engine.add_directory_handle(root);
+        engine
     }
 
 
     pub fn start(&mut self) -> io::Result<()> {
 
         // TODO: Find a way to use options appropriately
-        //let options = vec![OsStr::new("-o"), OsStr::new("fsname=TODO")];
+        //let options = vec![OsStr::new("-o"), OsStr::new("fsname=test")];
         let mount_point = self.mount_point.clone();
         let options = [];
 
@@ -53,10 +54,12 @@ impl<'a> Engine<'a> {
     }
 
 
-    pub fn add_file_handle(&mut self, object: FileImpl) -> ProtectedHandle {
+    pub fn add_file_handle<T: 'static>(&mut self, object: T) -> ProtectedHandle
+    where T: File + Send + Sync {
 
+        let boxed = Box::new(object);
         let ino = self.ino_generator.generate();
-        let handle = Arc::new(RwLock::new(Handle::new_file(ino, object)));
+        let handle = Arc::new(RwLock::new(Handle::new_file(ino, boxed)));
 
         self.registry.write().insert(ino, handle.clone());
 
@@ -70,11 +73,12 @@ impl<'a> Engine<'a> {
         handle
     }
 
-    pub fn add_directory_handle(&mut self, object: DirImpl) -> ProtectedHandle {
+    pub fn add_directory_handle<T: 'static>(&mut self, object: T) -> ProtectedHandle
+    where T: Directory + Send + Sync {
 
-
+        let boxed = Box::new(object);
         let ino = self.ino_generator.generate();
-        let handle = Arc::new(RwLock::new(Handle::new_dir(ino, object)));
+        let handle = Arc::new(RwLock::new(Handle::new_dir(ino, boxed)));
 
         self.registry.write().insert(ino,handle.clone());
 

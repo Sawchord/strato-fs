@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 /// The thread safe generator if Inos
 /// Used when spawning a new handler
+#[derive(Debug)]
 pub(crate) struct InoGenerator {
     next_ino : AtomicU64
 }

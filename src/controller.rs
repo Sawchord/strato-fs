@@ -9,6 +9,7 @@ use crate::driver::Driver;
 /// This object gets handed down to functions implementing a File System Handle trait, such as
 /// File or Directory. The controller exposes information about the Handles context and can also
 /// be used to manipulate (e.g. delete) the Handle.
+#[derive(Clone)]
 pub struct Controller {
 
     this_ino : u64,
@@ -48,6 +49,4 @@ impl Controller {
         }
     }
 
-    // TODO: Get ID functions
-    // TODO: Add Handles to Engine functions
 }

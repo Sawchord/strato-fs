@@ -12,7 +12,6 @@ pub mod link;
 mod utils;
 
 use std::sync::Arc;
-use std::time::Duration;
 use std::collections::BTreeMap;
 
 use parking_lot::RwLock;
@@ -30,6 +29,9 @@ pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, ProtectedHandle>>>;
 pub(crate) type NodeImpl = Box<dyn Node + Send + Sync>;
 pub(crate) type FileImpl = Box<dyn File + Send + Sync>;
 pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;
+
+
+// TODO: Implement Error Types
 
 
 /// This trait contains all the base functions, that need to be implemented for the object
@@ -60,8 +62,6 @@ pub trait Directory: Node {
 }
 
 pub trait File: Node {
-
-    //fn init(&mut self, controller: Controller) {}
 
     fn read(&mut self, controller: Controller, req: &Request) -> Option<Vec<u8>> {
         None

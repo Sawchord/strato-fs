@@ -9,7 +9,6 @@ pub type ProtectedHandle = Arc<RwLock<Handle>>;
 
 // FIXME: What are the visibility rules here?
 // FIXME: Are the Handle wrappers needed?
-// FIXME: Rename to Handle to avoid convusion with the Trait Implementations
 
 pub(crate) struct FileHandle {
     object: FileImpl,
@@ -22,7 +21,6 @@ impl FileHandle {
 }
 
 
-
 pub(crate) struct DirHandle {
     object: DirImpl,
 }
@@ -32,7 +30,6 @@ impl DirHandle {
         &mut self.object
     }
 }
-
 
 pub(crate) enum HandleDispatcher {
     File(FileHandle),

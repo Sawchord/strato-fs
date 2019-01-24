@@ -4,6 +4,7 @@ use fuse::{FileType, FileAttr};
 
 use crate::handler::{ProtectedHandle, HandleDispatcher};
 
+#[derive (Clone)]
 pub struct DirectoryEntry {
     name : String,
     handle : ProtectedHandle,
@@ -34,35 +35,9 @@ impl DirectoryEntry {
         }
     }
 
-    pub(crate) fn to_attr(&self) -> FileAttr{
-
-        let file_type = match self.handle.read().dispatch_ref() {
-            HandleDispatcher::Dir(_) => FileType::Directory,
-            HandleDispatcher::File(_) => FileType::RegularFile,
-        };
-
-        let time_none = Timespec::new(0, 0);
-
-        // TODO: Let these values either be user settable or find a way to set them programatically
-        FileAttr {
-            ino: self.handle.read().get_ino(),
-            size: 0,
-            blocks: 1,
-            atime: self.atime.unwrap_or(time_none),
-            mtime: self.mtime.unwrap_or(time_none),
-            ctime: self.ctime.unwrap_or(time_none),
-            crtime: self.crtime.unwrap_or(time_none),
-            kind: file_type,
-            perm: 0o744,
-            nlink: 1,
-            uid: 1000,
-            gid: 1000,
-            rdev: 0,
-            flags: 0,
-        }
-
+    pub fn get_name(&self) -> String {
+        self.name.clone()
     }
-
 
     pub fn mtime(&mut self, time:Timespec) -> &Self {
         self.mtime = Some(time);
@@ -83,6 +58,37 @@ impl DirectoryEntry {
         self.ttl.unwrap_or(Timespec::new(1,0))
     }
 
+
+    pub(crate) fn to_attr(&self) -> FileAttr{
+
+        let reader = self.handle.read();
+
+        let file_type = match reader.dispatch_ref() {
+            HandleDispatcher::Dir(_) => FileType::Directory,
+            HandleDispatcher::File(_) => FileType::RegularFile,
+        };
+
+        let time_none = Timespec::new(0, 0);
+
+        // TODO: Let these values either be user settable or find a way to set them programatically
+        FileAttr {
+            ino: reader.get_ino(),
+            size: 4096,
+            blocks: 1,
+            atime: self.atime.unwrap_or(time_none),
+            mtime: self.mtime.unwrap_or(time_none),
+            ctime: self.ctime.unwrap_or(time_none),
+            crtime: self.crtime.unwrap_or(time_none),
+            kind: file_type,
+            perm: 0o744,
+            nlink: 1,
+            uid: 1000,
+            gid: 1000,
+            rdev: 0,
+            flags: 0,
+        }
+
+    }
 
     pub(crate) fn to_reply(&self) -> (u64, FileType, String) {
         match self.handle.read().dispatch_ref() {
