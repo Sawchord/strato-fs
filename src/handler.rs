@@ -1,5 +1,6 @@
 use std::cmp::{PartialEq, Eq};
 use std::sync::Arc;
+use std::fmt;
 
 use parking_lot::RwLock;
 
@@ -112,4 +113,18 @@ impl Handle {
         self.ino
     }
 
+}
+
+impl fmt::Debug for Handle {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+
+        match self.dispatch {
+            HandleDispatcher::Dir(_) => {
+                write!(f, "ino:{} (Directory)", self.ino)
+            }
+            HandleDispatcher::File(_) => {
+                write!(f, "ino:{} (File)", self.ino)
+            }
+        }
+    }
 }

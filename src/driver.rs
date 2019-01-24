@@ -12,6 +12,21 @@ use crate::link::DirectoryEntry;
 use crate::Registry;
 
 
+/// This macro looks up the ino from the registry and returns the corresponding handler
+/// It sends an `ENOENT` to the FUSE driver, if the ino does not exist.
+macro_rules! get_handle {
+    ($driver:ident, $ino: ident, $reply:ident) => [
+        match $driver.registry.read().get(&$ino) {
+            None => {
+                $reply.error(ENOENT);
+                return;
+            }
+            Some(i) => i
+        }.clone()
+    ];
+}
+
+
 pub(crate) struct Driver {
     registry : Registry,
     ino_generator : Arc<InoGenerator>,
@@ -37,23 +52,7 @@ impl Driver {
 }
 
 
-/// This macro looks up the ino from the registry and returns the corresponding handler
-/// It sends an `ENOENT` to the FUSE driver, if the ino does not exist.
-macro_rules! get_handle {
-    ($driver:ident, $ino: ident, $reply:ident) => [
-        match $driver.registry.read().get(&$ino) {
-            None => {
-                $reply.error(ENOENT);
-                return;
-            }
-            Some(i) => i
-        }.clone()
-    ];
-}
-
 // TODO: Implement macros to check if directory or file with appropriate errors
-
-
 impl Filesystem for Driver {
 
     fn lookup(&mut self, req: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {

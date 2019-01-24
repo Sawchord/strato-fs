@@ -4,17 +4,39 @@ use fuse::{FileType, FileAttr};
 
 use crate::handler::{ProtectedHandle, HandleDispatcher};
 
-#[derive (Clone)]
+macro_rules! getter {
+    ($a: ident, $b:ident, $c:ty, $doc:tt) => {
+        #[doc = $doc]
+        pub fn $a(&self) -> $c {
+            self.$b
+        }
+    }
+}
+
+macro_rules! setter {
+    ($a: ident, $b:ty, $doc:tt) => [
+        #[doc = $doc]
+        pub fn $a(&mut self, val: $b) -> &Self {
+            self.$a = val;
+            self
+        }
+    ]
+}
+
+
+#[derive (Clone, Debug)]
 pub struct DirectoryEntry {
     name : String,
     handle : ProtectedHandle,
 
-    atime: Option<Timespec>,
-    mtime: Option<Timespec>,
-    ctime: Option<Timespec>,
-    crtime: Option<Timespec>,
+    size: u64,
 
-    ttl: Option<Timespec>,
+    atime: Timespec,
+    mtime: Timespec,
+    ctime: Timespec,
+    crtime: Timespec,
+
+    ttl: Timespec,
 }
 
 
@@ -22,16 +44,21 @@ impl DirectoryEntry {
 
     /// Creates a directory entry
     pub fn new(name : String, handle : ProtectedHandle) -> Self {
+
+        let epoch = Timespec::new(0, 0);
+
         DirectoryEntry {
             name,
             handle : handle.clone(),
 
-            atime: None,
-            mtime: None,
-            ctime: None,
-            crtime: None,
+            size: 0,
 
-            ttl: None,
+            atime: epoch,
+            mtime: epoch,
+            ctime: epoch,
+            crtime: epoch,
+
+            ttl: epoch,
         }
     }
 
@@ -39,25 +66,28 @@ impl DirectoryEntry {
         self.name.clone()
     }
 
-    pub fn mtime(&mut self, time:Timespec) -> &Self {
-        self.mtime = Some(time);
-        self
-    }
+
+    getter!(get_size, size, u64, "Returns the size of the entry");
+    setter!(size, u64, "Set the size of the entry");
+
+    getter!(get_atime, atime, Timespec, "Returns the last accessed time");
+    setter!(atime, Timespec, "Set the time the file was last accessed.");
+
+    getter!(get_mtime, mtime, Timespec, "Returns the last modified time");
+    setter!(mtime, Timespec, "Set the time the file was last modified.");
+
+    getter!(get_ctime, ctime, Timespec, "Returns the last changed time");
+    setter!(ctime, Timespec, "Set the time the file was last changed.");
+
+    getter!(get_crtime, crtime, Timespec, "Returns the created time");
+    setter!(crtime, Timespec, "Set the time the file was created.");
 
 
-
-    /// Set the time, this `Directory Entry` is considered valid.
-    /// This OS will cache the attributes for this time.
-    /// Afterwards, the OS will query the `getattr` again.
-    pub fn ttl(&mut self, ttl:Timespec) -> &Self {
-        self.ttl = Some(ttl);
-        self
-    }
-
-    pub fn get_ttl(&self) -> Timespec {
-        self.ttl.unwrap_or(Timespec::new(1,0))
-    }
-
+    getter!(get_ttl, ttl, Timespec, "Set the time, this `Directory Entry` is considered valid.\
+        This OS will cache the attributes for this time. Afterwards, the OS will query the \
+        `getattr` again.");
+    setter!(ttl, Timespec, "Get the time, this `Directory Entry` is considered valid.");
+    
 
     pub(crate) fn to_attr(&self) -> FileAttr{
 
@@ -68,17 +98,15 @@ impl DirectoryEntry {
             HandleDispatcher::File(_) => FileType::RegularFile,
         };
 
-        let time_none = Timespec::new(0, 0);
-
-        // TODO: Let these values either be user settable or find a way to set them programatically
+        // TODO: Let these values either be user settable or find a way to set them programmatically
         FileAttr {
             ino: reader.get_ino(),
-            size: 4096,
+            size: self.size,
             blocks: 1,
-            atime: self.atime.unwrap_or(time_none),
-            mtime: self.mtime.unwrap_or(time_none),
-            ctime: self.ctime.unwrap_or(time_none),
-            crtime: self.crtime.unwrap_or(time_none),
+            atime: self.atime,
+            mtime: self.mtime,
+            ctime: self.ctime,
+            crtime: self.crtime,
             kind: file_type,
             perm: 0o744,
             nlink: 1,

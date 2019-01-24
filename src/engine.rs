@@ -34,7 +34,7 @@ impl<'a> Engine<'a> {
             fuse_session : None,
         };
 
-        engine.add_directory_handle(root);
+        engine.add_directory(root);
         engine
     }
 
@@ -54,7 +54,7 @@ impl<'a> Engine<'a> {
     }
 
 
-    pub fn add_file_handle<T: 'static>(&mut self, object: T) -> ProtectedHandle
+    pub fn add_file<T: 'static>(&mut self, object: T) -> ProtectedHandle
     where T: File + Send + Sync {
 
         let boxed = Box::new(object);
@@ -73,7 +73,7 @@ impl<'a> Engine<'a> {
         handle
     }
 
-    pub fn add_directory_handle<T: 'static>(&mut self, object: T) -> ProtectedHandle
+    pub fn add_directory<T: 'static>(&mut self, object: T) -> ProtectedHandle
     where T: Directory + Send + Sync {
 
         let boxed = Box::new(object);

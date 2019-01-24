@@ -127,6 +127,8 @@ impl Node for StaticFile {
         attr.mtime(time::get_time());
         attr.ttl(time::get_time() + time::Duration::seconds(20));
 
+        attr.size(self.text.len() as u64);
+
         Some(attr)
     }
 
@@ -175,7 +177,7 @@ fn main() {
     let mut engine = Engine::new(&mountpoint, root.clone());
 
 
-    let text_handle = engine.add_file_handle(StaticFile::new("Hello World\n".to_string()));
+    let text_handle = engine.add_file(StaticFile::new("Hello World\n".to_string()));
     root.add(DirectoryEntry::new("hello.txt".to_string(), text_handle));
 
 
