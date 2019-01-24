@@ -35,7 +35,7 @@ pub trait Directory {
     fn init(&mut self, controller: Controller) {}
 
     fn lookup(&mut self, controller: Controller, req: &Request, name: String)
-        -> Option<(DirectoryEntry, Duration)> {
+        -> Option<DirectoryEntry> {
         None
     }
 

@@ -42,10 +42,10 @@ impl Directory for StaticDir {
     }
 
     fn lookup(&mut self, controller: Controller, req: &Request, name: String)
-        -> Option<(DirectoryEntry, Duration)> {
-        println!("Lookup on static dir");
+        -> Option<DirectoryEntry> {
+        println!("Lookup on static dir, name: {}", name);
         if name == "." || name == ".." {
-            Some((DirectoryEntry::new(name, self.handle.clone().unwrap()), Duration::new(1, 0)))
+            Some(DirectoryEntry::new(name, self.handle.clone().unwrap()))
         } else {
             None
         }

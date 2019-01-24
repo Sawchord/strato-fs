@@ -77,10 +77,9 @@ impl Filesystem for Driver {
             None => {
                 reply.error(ENOENT);
             }
-            Some((entry, duration)) => {
-                // TODO: Fix timespec
+            Some(entry) => {
                 // TODO: What does Generation do?
-                reply.entry(&Timespec::new(1, 0), &entry.to_attr(), 0);
+                reply.entry(&entry.get_ttl(), &entry.to_attr(), 0);
             }
         }
 

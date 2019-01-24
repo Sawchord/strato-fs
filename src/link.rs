@@ -13,6 +13,7 @@ pub struct DirectoryEntry {
     ctime: Option<Timespec>,
     crtime: Option<Timespec>,
 
+    ttl: Option<Timespec>,
 }
 
 
@@ -28,11 +29,12 @@ impl DirectoryEntry {
             mtime: None,
             ctime: None,
             crtime: None,
+
+            ttl: None,
         }
     }
 
     // TODO: Add attribute functions
-
     pub(crate) fn to_attr(&self) -> FileAttr{
 
         let file_type = match self.handle.read().dispatch_ref() {
@@ -59,6 +61,19 @@ impl DirectoryEntry {
             flags: 0,
         }
 
+    }
+
+
+    /// Set the time, this `Directory Entry` is considered valid.
+    /// This OS will cache the attributes for this time.
+    /// Afterwards, the OS will query the `getattr` again.
+    pub fn ttl(mut self, ttl:Timespec) -> Self {
+        self.ttl = Some(ttl);
+        self
+    }
+
+    pub fn get_ttl(&self) -> Timespec {
+        self.ttl.unwrap_or(Timespec::new(1,0))
     }
 
 
