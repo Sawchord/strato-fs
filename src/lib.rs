@@ -17,7 +17,7 @@ mod controller;
 pub use crate::controller::Controller;
 
 pub mod link;
-
+pub mod error;
 
 use std::sync::Arc;
 use std::collections::BTreeMap;
