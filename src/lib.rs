@@ -3,22 +3,28 @@ extern crate parking_lot;
 extern crate fuse;
 extern crate libc;
 
-pub mod engine;
-pub mod driver;
-pub mod handler;
-pub mod controller;
+mod driver;
+mod utils;
+
+
+mod engine;
+pub use crate::engine::Engine;
+
+mod handler;
+pub use crate::handler::Handle;
+
+mod controller;
+pub use crate::controller::Controller;
+
 pub mod link;
 
-mod utils;
 
 use std::sync::Arc;
 use std::collections::BTreeMap;
 
 use parking_lot::RwLock;
 
-use crate::link::DirectoryEntry;
-use crate::handler::Handle;
-use crate::controller::Controller;
+use crate::link::DirEntry;
 
 
 pub use fuse::Request;
@@ -41,8 +47,8 @@ pub trait Node {
 
     fn init(&mut self, _: Controller) {}
 
-    fn read_attributes(&mut self, _: &Request, _: DirectoryEntry)
-        -> Option<DirectoryEntry> {
+    fn read_attributes(&mut self, _: &Request, _: DirEntry)
+        -> Option<DirEntry> {
         None
     }
 
@@ -51,11 +57,11 @@ pub trait Node {
 
 pub trait Directory: Node {
 
-    fn lookup(&mut self, _: &Request, _: String) -> Option<DirectoryEntry> {
+    fn lookup(&mut self, _: &Request, _: String) -> Option<DirEntry> {
         None
     }
 
-    fn readdir(&mut self, _: &Request) -> Option<Vec<DirectoryEntry>> {
+    fn readdir(&mut self, _: &Request) -> Option<Vec<DirEntry>> {
         None
     }
 

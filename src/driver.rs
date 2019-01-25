@@ -7,7 +7,7 @@ use fuse::{Filesystem, Request, ReplyDirectory, ReplyData, ReplyEntry, ReplyAttr
 
 use crate::handler::HandleDispatcher::*;
 use crate::utils::InoGenerator;
-use crate::link::DirectoryEntry;
+use crate::link::DirEntry;
 use crate::Registry;
 
 
@@ -39,14 +39,6 @@ impl Driver {
             //ino_generator : ino_generator.clone(),
         }
     }
-
-    //pub(crate) fn get_registry(&self) -> Registry {
-    //    self.registry.clone()
-    //}
-
-    //pub(crate) fn get_ino_generator(&self) -> Arc<InoGenerator> {
-    //    self.ino_generator.clone()
-    //}
 
 }
 
@@ -84,7 +76,7 @@ impl Filesystem for Driver {
     fn getattr(&mut self, req: &Request, ino: u64, reply: ReplyAttr) {
 
         let handle = get_handle!(self, ino, reply);
-        let base_entry = DirectoryEntry::new("".to_string(), handle.clone());
+        let base_entry = DirEntry::new("".to_string(), handle.clone());
 
         let result = match handle.write().dispatch() {
             Dir(ref mut dir) => {

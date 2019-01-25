@@ -12,14 +12,14 @@ use parking_lot::RwLock;
 use time;
 
 use strato::{Node, Directory, File, Request};
-use strato::handler::Handle;
-use strato::engine::Engine;
-use strato::controller::Controller;
-use strato::link::DirectoryEntry;
+use strato::Handle;
+use strato::Engine;
+use strato::Controller;
+use strato::link::DirEntry;
 
 struct StaticDirInner {
     handle: Option<Handle>,
-    links : Vec<DirectoryEntry>
+    links : Vec<DirEntry>
 }
 
 #[derive(Clone)]
@@ -43,7 +43,7 @@ impl StaticDir {
         )))
     }
 
-    fn add(&mut self, link: DirectoryEntry) {
+    fn add(&mut self, link: DirEntry) {
         self.write().links.push(link);
     }
 
@@ -57,7 +57,7 @@ impl Node for StaticDir {
     }
 
     fn read_attributes(&mut self, _req: &Request,
-                       mut attr: DirectoryEntry) -> Option<DirectoryEntry> {
+                       mut attr: DirEntry) -> Option<DirEntry> {
         println!("Requested attributes on static dir");
 
         attr.mtime(time::get_time());
@@ -70,21 +70,21 @@ impl Node for StaticDir {
 
 impl Directory for StaticDir {
 
-    fn readdir(&mut self, _req: &Request) -> Option<Vec<DirectoryEntry>> {
+    fn readdir(&mut self, _req: &Request) -> Option<Vec<DirEntry>> {
         println!("Readdir on static dir");
         let mut vec = vec!{
-                DirectoryEntry::new(".".to_string(), self.read().handle.clone().unwrap()),
-                DirectoryEntry::new("..".to_string(), self.read().handle.clone().unwrap()),
+                DirEntry::new(".".to_string(), self.read().handle.clone().unwrap()),
+                DirEntry::new("..".to_string(), self.read().handle.clone().unwrap()),
             };
         vec.append(&mut self.read().links.clone());
         Some(vec)
     }
 
     fn lookup(&mut self, _req: &Request, name: String)
-        -> Option<DirectoryEntry> {
+        -> Option<DirEntry> {
         println!("Lookup on static dir, name: {}", name);
         if name == "." || name == ".." {
-            return Some(DirectoryEntry::new(name, self.read().handle.clone().unwrap()))
+            return Some(DirEntry::new(name, self.read().handle.clone().unwrap()))
         } else {
             for x in self.read().links.iter() {
                 if x.get_name() == name {
@@ -121,7 +121,7 @@ impl Node for StaticFile {
     }
 
     fn read_attributes(&mut self, _req: &Request,
-                       mut attr: DirectoryEntry) -> Option<DirectoryEntry> {
+                       mut attr: DirEntry) -> Option<DirEntry> {
         println!("Requested attributes on static file");
 
         attr.mtime(time::get_time());
@@ -178,10 +178,10 @@ fn main() {
 
 
     let text_handle = engine.add_file(StaticFile::new("Hello World\n".to_string()));
-    root.add(DirectoryEntry::new("hello.txt".to_string(), text_handle));
+    root.add(DirEntry::new("hello.txt".to_string(), text_handle));
 
     let text_handle = engine.add_file(StaticFile::new("Goodbeye World\n".to_string()));
-    root.add(DirectoryEntry::new("goodbye.txt".to_string(), text_handle));
+    root.add(DirEntry::new("goodbye.txt".to_string(), text_handle));
 
 
     match engine.start() {
