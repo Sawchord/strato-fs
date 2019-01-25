@@ -25,7 +25,7 @@ macro_rules! setter {
 
 
 #[derive (Clone, Debug)]
-pub struct DirEntry {
+pub struct NodeEntry {
     name : String,
     handle : Handle,
 
@@ -40,14 +40,14 @@ pub struct DirEntry {
 }
 
 
-impl DirEntry {
+impl NodeEntry {
 
     /// Creates a directory entry
     pub fn new(name : String, handle: Handle) -> Self {
 
         let epoch = Timespec::new(0, 0);
 
-        DirEntry {
+        NodeEntry {
             name,
             handle : handle.clone(),
 

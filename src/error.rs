@@ -20,6 +20,7 @@ impl IsDirError for DirError{}
 #[derive (Debug, Clone)]
 pub enum NodeError {
     NotImplemented,
+    NoSuchEntry,
     IOError,
     PermissionDenied,
     TryAgain,
@@ -37,6 +38,7 @@ impl Error for NodeError {
     fn description(&self) -> &str {
         match *self {
             NotImplemented => "The requested operation is not implemented",
+            NoSuchEntry => "The requested node does not exist",
             IOError => "An I/O Error occurred",
             PermissionDenied => "The user does not have permission to execute the operation",
             TryAgain => "Try again later",
@@ -46,9 +48,15 @@ impl Error for NodeError {
 }
 
 impl NodeError {
+
+    pub fn new(val: NodeError) -> Self {
+        val
+    }
+
     pub(crate) fn get_libc_code(&self) -> i32 {
         match *self {
             NotImplemented => EPERM,
+            NoSuchEntry => ENOENT,
             IOError => EIO,
             PermissionDenied => EACCES,
             TryAgain => EAGAIN,

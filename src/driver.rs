@@ -7,7 +7,7 @@ use fuse::{Filesystem, Request, ReplyDirectory, ReplyData, ReplyEntry, ReplyAttr
 
 use crate::handler::HandleDispatcher::*;
 use crate::utils::InoGenerator;
-use crate::link::DirEntry;
+use crate::link::NodeEntry;
 use crate::Registry;
 
 
@@ -62,13 +62,11 @@ impl Filesystem for Driver {
         };
 
         match result {
-            None => {
-                reply.error(ENOENT);
-            }
-            Some(entry) => {
+            Ok(entry) => {
                 // TODO: What does Generation do?
                 reply.entry(&entry.get_ttl(), &entry.to_attr(), 0);
-            }
+            },
+            Err(error) => { reply.error(error.get_libc_code()); }
         }
 
     }
@@ -76,7 +74,7 @@ impl Filesystem for Driver {
     fn getattr(&mut self, req: &Request, ino: u64, reply: ReplyAttr) {
 
         let handle = get_handle!(self, ino, reply);
-        let base_entry = DirEntry::new("".to_string(), handle.clone());
+        let base_entry = NodeEntry::new("".to_string(), handle.clone());
 
         let result = match handle.write().dispatch() {
             Dir(ref mut dir) => {
@@ -88,8 +86,8 @@ impl Filesystem for Driver {
         };
 
         match result {
-            None => reply.error(EPERM),
-            Some(entry) => reply.attr(&entry.get_ttl(), &entry.to_attr())
+            Ok(entry) => reply.attr(&entry.get_ttl(), &entry.to_attr()),
+            Err(error) => reply.error(error.get_libc_code()),
         }
 
     }
@@ -111,12 +109,12 @@ impl Filesystem for Driver {
         };
 
         match result {
-            None => {
-                reply.error(EPERM);
-            }
-            Some(vec) => {
+            Ok(vec) => {
                 println!("Request params: Offset {} Size {}", offset, size);
                 reply.data(&vec[offset as usize..]);
+            }
+            Err(error) => {
+                reply.error(error.get_libc_code());
             }
         }
 
@@ -142,10 +140,7 @@ impl Filesystem for Driver {
         };
 
         match result {
-            None => {
-                reply.error(EPERM);
-            }
-            Some(vec) => {
+            Ok(vec) => {
                 let to_skip = if offset == 0 { offset } else { offset + 1 } as usize;
                 for (i, entry) in vec.into_iter().enumerate().skip(to_skip) {
 
@@ -154,6 +149,9 @@ impl Filesystem for Driver {
 
                 }
                 reply.ok();
+            },
+            Err(error) => {
+                reply.error(error.get_libc_code());
             }
         }
     }

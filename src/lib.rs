@@ -24,8 +24,9 @@ use std::collections::BTreeMap;
 
 use parking_lot::RwLock;
 
-use crate::link::DirEntry;
+use crate::link::NodeEntry;
 
+use crate::error::{NodeError, FileError, DirError};
 
 pub use fuse::Request;
 
@@ -36,7 +37,6 @@ pub(crate) type FileImpl = Box<dyn File + Send + Sync>;
 pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;
 
 
-// TODO: Implement Error Types
 // TODO: Implement own Request type which is Cloneable, and contains information about offset and size
 
 // TODO: F U T U R E S
@@ -47,9 +47,8 @@ pub trait Node {
 
     fn init(&mut self, _: Controller) {}
 
-    fn read_attributes(&mut self, _: &Request, _: DirEntry)
-        -> Option<DirEntry> {
-        None
+    fn read_attributes(&mut self, _: &Request, _: NodeEntry) -> Result<NodeEntry, NodeError> {
+        Err(NodeError::new(NodeError::NotImplemented))
     }
 
 }
@@ -57,20 +56,20 @@ pub trait Node {
 
 pub trait Directory: Node {
 
-    fn lookup(&mut self, _: &Request, _: String) -> Option<DirEntry> {
-        None
+    fn lookup(&mut self, _: &Request, _: String) -> Result<NodeEntry, NodeError> {
+        Err(NodeError::new(NodeError::NotImplemented))
     }
 
-    fn readdir(&mut self, _: &Request) -> Option<Vec<DirEntry>> {
-        None
+    fn readdir(&mut self, _: &Request) -> Result<Vec<NodeEntry>, DirError> {
+        Err(DirError::new(NodeError::NotImplemented))
     }
 
 }
 
 pub trait File: Node {
 
-    fn read(&mut self, _: &Request) -> Option<Vec<u8>> {
-        None
+    fn read(&mut self, _: &Request) -> Result<Vec<u8>, FileError> {
+        Err(FileError::new(NodeError::NotImplemented))
     }
 
 }
