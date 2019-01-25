@@ -8,7 +8,7 @@ use std::io;
 use fuse::BackgroundSession;
 
 use crate::{File, Directory, Registry};
-use crate::handler::{ProtectedHandle, Handle};
+use crate::handler::{ProtectedHandle, Handle, HandleDispatcher::*};
 use crate::controller::Controller;
 use crate::driver::Driver;
 use crate::utils::InoGenerator;
@@ -64,7 +64,7 @@ impl<'a> Engine<'a> {
         self.registry.write().insert(ino, handle.clone());
 
         let controller = Controller::create_from_engine(self, ino, handle.clone());
-        if let HandleDispatcher::File(ref mut file) = handle.write().dispatch() {
+        if let RegularFile(ref mut file) = handle.write().dispatch() {
             file.init(controller)
         } else {
             // Can not happen
@@ -83,7 +83,7 @@ impl<'a> Engine<'a> {
         self.registry.write().insert(ino,handle.clone());
 
         let controller = Controller::create_from_engine(self, ino, handle.clone());
-        if let HandleDispatcher::Dir(ref mut dir) = handle.write().dispatch() {
+        if let Dir(ref mut dir) = handle.write().dispatch() {
             dir.init(controller)
         } else {
             // Can not happen

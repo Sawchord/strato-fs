@@ -8,15 +8,12 @@ use crate::{FileImpl, DirImpl};
 
 pub type ProtectedHandle = Arc<RwLock<Handle>>;
 
-// FIXME: What are the visibility rules here?
-// FIXME: Are the Handle wrappers needed?
-
-
-
 pub(crate) enum HandleDispatcher {
-    File(FileImpl),
+    RegularFile(FileImpl),
     Dir(DirImpl)
 }
+
+use self::HandleDispatcher::*;
 
 pub struct Handle {
     ino : u64,
@@ -36,14 +33,14 @@ impl Handle {
     pub(crate) fn new_file(ino: u64, object: FileImpl) -> Self {
         Handle{
             ino,
-            dispatch : HandleDispatcher::File(object),
+            dispatch : RegularFile(object),
         }
     }
 
     pub(crate) fn new_dir(ino: u64, object: DirImpl) -> Self {
         Handle{
             ino,
-            dispatch : HandleDispatcher::Dir(object),
+            dispatch : Dir(object),
         }
     }
 
@@ -66,10 +63,10 @@ impl fmt::Debug for Handle {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
         match self.dispatch {
-            HandleDispatcher::Dir(_) => {
+            Dir(_) => {
                 write!(f, "ino:{} (Directory)", self.ino)
             }
-            HandleDispatcher::File(_) => {
+            RegularFile(_) => {
                 write!(f, "ino:{} (File)", self.ino)
             }
         }

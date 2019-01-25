@@ -2,7 +2,7 @@ use time::Timespec;
 
 use fuse::{FileType, FileAttr};
 
-use crate::handler::{ProtectedHandle, HandleDispatcher};
+use crate::handler::{ProtectedHandle, HandleDispatcher::*};
 
 macro_rules! getter {
     ($a: ident, $b:ident, $c:ty, $doc:tt) => {
@@ -94,8 +94,8 @@ impl DirectoryEntry {
         let reader = self.handle.read();
 
         let file_type = match reader.dispatch_ref() {
-            HandleDispatcher::Dir(_) => FileType::Directory,
-            HandleDispatcher::File(_) => FileType::RegularFile,
+            Dir(_) => FileType::Directory,
+            RegularFile(_) => FileType::RegularFile,
         };
 
         // TODO: Let these values either be user settable or find a way to set them programmatically
@@ -120,10 +120,10 @@ impl DirectoryEntry {
 
     pub(crate) fn to_reply(&self) -> (u64, FileType, String) {
         match self.handle.read().dispatch_ref() {
-            HandleDispatcher::Dir(_) => {
+            Dir(_) => {
                 (self.handle.read().get_ino(), FileType::Directory, self.name.clone())
             }
-            HandleDispatcher::File(_) => {
+            RegularFile(_) => {
                 (self.handle.read().get_ino(), FileType::RegularFile, self.name.clone())
             }
         }

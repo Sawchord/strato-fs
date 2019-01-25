@@ -5,7 +5,7 @@ use libc::*;
 
 use fuse::{Filesystem, Request, ReplyDirectory, ReplyData, ReplyEntry, ReplyAttr};
 
-use crate::handler::HandleDispatcher;
+use crate::handler::HandleDispatcher::*;
 use crate::utils::InoGenerator;
 use crate::link::DirectoryEntry;
 use crate::Registry;
@@ -60,7 +60,7 @@ impl Filesystem for Driver {
         let n = name.to_string_lossy().to_string();
 
         let result = match handle.write().dispatch() {
-            HandleDispatcher::Dir(ref mut dir) => {
+            Dir(ref mut dir) => {
                 dir.lookup(req, n)
             }
             _ => {
@@ -87,10 +87,10 @@ impl Filesystem for Driver {
         let base_entry = DirectoryEntry::new("".to_string(), handle.clone());
 
         let result = match handle.write().dispatch() {
-            HandleDispatcher::Dir(ref mut dir) => {
+            Dir(ref mut dir) => {
                 dir.read_attributes(req, base_entry)
             }
-            HandleDispatcher::File(ref mut file) => {
+            RegularFile(ref mut file) => {
                 file.read_attributes(req, base_entry)
             }
         };
@@ -109,7 +109,7 @@ impl Filesystem for Driver {
         let handle = get_handle!(self, ino, reply);
 
         let result = match handle.write().dispatch() {
-            HandleDispatcher::File(ref mut file) => {
+            RegularFile(ref mut file) => {
                 file.read(req)
             }
             _ => {
@@ -140,7 +140,7 @@ impl Filesystem for Driver {
         // Check that the handle references a directory
         let result = match handle.write().dispatch() {
             // Check that this is actually a directory
-            HandleDispatcher::Dir(ref mut dir) => {
+            Dir(ref mut dir) => {
                 dir.readdir(req)
             },
             _ => {
