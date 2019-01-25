@@ -12,13 +12,13 @@ use parking_lot::RwLock;
 use time;
 
 use strato::{Node, Directory, File, Request};
-use strato::handler::ProtectedHandle;
+use strato::handler::Handle;
 use strato::engine::Engine;
 use strato::controller::Controller;
 use strato::link::DirectoryEntry;
 
 struct StaticDirInner {
-    handle: Option<ProtectedHandle>,
+    handle: Option<Handle>,
     links : Vec<DirectoryEntry>
 }
 
@@ -98,7 +98,7 @@ impl Directory for StaticDir {
 
 
 struct StaticFile {
-    handle: Option<ProtectedHandle>,
+    handle: Option<Handle>,
     text: String,
 }
 

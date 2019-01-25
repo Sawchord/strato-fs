@@ -2,7 +2,7 @@ use time::Timespec;
 
 use fuse::{FileType, FileAttr};
 
-use crate::handler::{ProtectedHandle, HandleDispatcher::*};
+use crate::handler::{Handle, HandleDispatcher::*};
 
 macro_rules! getter {
     ($a: ident, $b:ident, $c:ty, $doc:tt) => {
@@ -27,7 +27,7 @@ macro_rules! setter {
 #[derive (Clone, Debug)]
 pub struct DirectoryEntry {
     name : String,
-    handle : ProtectedHandle,
+    handle : Handle,
 
     size: u64,
 
@@ -43,7 +43,7 @@ pub struct DirectoryEntry {
 impl DirectoryEntry {
 
     /// Creates a directory entry
-    pub fn new(name : String, handle : ProtectedHandle) -> Self {
+    pub fn new(name : String, handle: Handle) -> Self {
 
         let epoch = Timespec::new(0, 0);
 

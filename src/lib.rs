@@ -17,22 +17,20 @@ use std::collections::BTreeMap;
 use parking_lot::RwLock;
 
 use crate::link::DirectoryEntry;
-use crate::handler::ProtectedHandle;
+use crate::handler::Handle;
 use crate::controller::Controller;
 
 
 pub use fuse::Request;
 
 
-pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, ProtectedHandle>>>;
+pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, Handle>>>;
 
-//pub(crate) type NodeImpl = Box<dyn Node + Send + Sync>;
 pub(crate) type FileImpl = Box<dyn File + Send + Sync>;
 pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;
 
 
 // TODO: Implement Error Types
-// TODO: Rename Handler to HandlerInner and make concrete Type out of ProtectedHandler and name it Handler
 // TODO: Implement own Request type which is Cloneable, and contains information about offset and size
 
 // TODO: F U T U R E S

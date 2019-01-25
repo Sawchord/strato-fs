@@ -1,10 +1,8 @@
 use std::sync::Arc;
 
-use parking_lot::RwLock;
-
 use crate::{Registry, File, Directory};
 use crate::engine::Engine;
-use crate::handler::{ProtectedHandle, Handle, HandleDispatcher::*};
+use crate::handler::{Handle, HandleDispatcher::*};
 use crate::utils::InoGenerator;
 
 /// This object gets handed down to functions implementing a File System Handle trait, such as
@@ -12,24 +10,23 @@ use crate::utils::InoGenerator;
 /// be used to manipulate (e.g. delete) the Handle.
 #[derive(Clone)]
 pub struct Controller {
-
     this_ino : u64,
 
     ino_generator : Arc<InoGenerator>,
     registry : Registry,
 
-    handle : ProtectedHandle,
+    handle : Handle,
 }
 
 impl Controller {
 
 
-    pub fn add_file<T: 'static>(&mut self, object: T) -> ProtectedHandle
+    pub fn add_file<T: 'static>(&mut self, object: T) -> Handle
         where T: File + Send + Sync {
 
         let boxed = Box::new(object);
         let ino = self.ino_generator.generate();
-        let handle = Arc::new(RwLock::new(Handle::new_file(ino, boxed)));
+        let handle = Handle::new_file(ino, boxed);
 
         self.registry.write().insert(ino, handle.clone());
 
@@ -43,12 +40,12 @@ impl Controller {
         handle
     }
 
-    pub fn add_directory<T: 'static>(&mut self, object: T) -> ProtectedHandle
+    pub fn add_directory<T: 'static>(&mut self, object: T) -> Handle
         where T: Directory + Send + Sync {
 
         let boxed = Box::new(object);
         let ino = self.ino_generator.generate();
-        let handle = Arc::new(RwLock::new(Handle::new_dir(ino, boxed)));
+        let handle = Handle::new_dir(ino, boxed);
 
         self.registry.write().insert(ino,handle.clone());
 
@@ -62,12 +59,12 @@ impl Controller {
         handle
     }
 
-    pub fn get_handle(&self) -> ProtectedHandle {
+    pub fn get_handle(&self) -> Handle {
         self.handle.clone()
     }
 
 
-    pub(crate) fn create_from_engine(engine: &Engine, ino: u64, handle : ProtectedHandle) -> Self {
+    pub(crate) fn create_from_engine(engine: &Engine, ino: u64, handle: Handle) -> Self {
         Controller {
             this_ino : ino,
 
@@ -78,7 +75,7 @@ impl Controller {
         }
     }
 
-    pub(crate) fn create_from_controller(controller: &Controller, ino: u64, handle : ProtectedHandle) -> Self {
+    pub(crate) fn create_from_controller(controller: &Controller, ino: u64, handle: Handle) -> Self {
         Controller {
             this_ino : ino,
 

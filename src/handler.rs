@@ -2,48 +2,66 @@ use std::cmp::{PartialEq, Eq};
 use std::sync::Arc;
 use std::fmt;
 
+use std::ops::Deref;
+
 use parking_lot::RwLock;
 
 use crate::{FileImpl, DirImpl};
+use self::HandleDispatcher::*;
 
-pub type ProtectedHandle = Arc<RwLock<Handle>>;
+#[derive (Clone, Debug)]
+pub struct Handle (Arc<RwLock<HandleInner>>);
+
+impl Handle {
+
+    pub(crate) fn new_file(ino: u64, object: FileImpl) -> Self {
+        Handle(Arc::new(RwLock::new(
+            HandleInner {
+                ino,
+                dispatch : RegularFile(object),
+            }
+        )))
+    }
+
+    pub(crate) fn new_dir(ino: u64, object: DirImpl) -> Self {
+        Handle(Arc::new(RwLock::new(
+            HandleInner {
+                ino,
+                dispatch : Dir(object),
+            }
+        )))
+    }
+
+}
+
+impl Deref for Handle {
+    type Target = Arc<RwLock<HandleInner>>;
+    fn deref(&self) -> &Arc<RwLock<HandleInner>> {
+        &self.0
+    }
+}
+
 
 pub(crate) enum HandleDispatcher {
     RegularFile(FileImpl),
     Dir(DirImpl)
 }
 
-use self::HandleDispatcher::*;
 
-pub struct Handle {
+pub struct HandleInner {
     ino : u64,
     dispatch : HandleDispatcher,
 }
 
-impl PartialEq for Handle {
-    fn eq (&self, other : &Handle) -> bool {
+impl PartialEq for HandleInner {
+    fn eq (&self, other : &HandleInner) -> bool {
         self.ino == other.ino
     }
 }
-impl Eq for Handle {}
+impl Eq for HandleInner {}
 
 
-impl Handle {
-
-    pub(crate) fn new_file(ino: u64, object: FileImpl) -> Self {
-        Handle{
-            ino,
-            dispatch : RegularFile(object),
-        }
-    }
-
-    pub(crate) fn new_dir(ino: u64, object: DirImpl) -> Self {
-        Handle{
-            ino,
-            dispatch : Dir(object),
-        }
-    }
-
+impl HandleInner {
 
     pub(crate) fn dispatch_ref(&self) -> &HandleDispatcher {
         &self.dispatch
@@ -59,7 +77,7 @@ impl Handle {
 
 }
 
-impl fmt::Debug for Handle {
+impl fmt::Debug for HandleInner {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
         match self.dispatch {

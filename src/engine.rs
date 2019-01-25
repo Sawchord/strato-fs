@@ -8,7 +8,7 @@ use std::io;
 use fuse::BackgroundSession;
 
 use crate::{File, Directory, Registry};
-use crate::handler::{ProtectedHandle, Handle, HandleDispatcher::*};
+use crate::handler::{Handle, HandleDispatcher::*};
 use crate::controller::Controller;
 use crate::driver::Driver;
 use crate::utils::InoGenerator;
@@ -54,12 +54,12 @@ impl<'a> Engine<'a> {
     }
 
 
-    pub fn add_file<T: 'static>(&mut self, object: T) -> ProtectedHandle
+    pub fn add_file<T: 'static>(&mut self, object: T) -> Handle
     where T: File + Send + Sync {
 
         let boxed = Box::new(object);
         let ino = self.ino_generator.generate();
-        let handle = Arc::new(RwLock::new(Handle::new_file(ino, boxed)));
+        let handle = Handle::new_file(ino, boxed);
 
         self.registry.write().insert(ino, handle.clone());
 
@@ -73,12 +73,12 @@ impl<'a> Engine<'a> {
         handle
     }
 
-    pub fn add_directory<T: 'static>(&mut self, object: T) -> ProtectedHandle
+    pub fn add_directory<T: 'static>(&mut self, object: T) -> Handle
     where T: Directory + Send + Sync {
 
         let boxed = Box::new(object);
         let ino = self.ino_generator.generate();
-        let handle = Arc::new(RwLock::new(Handle::new_dir(ino, boxed)));
+        let handle = Handle::new_dir(ino, boxed);
 
         self.registry.write().insert(ino,handle.clone());
 
