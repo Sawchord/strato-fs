@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use fuse::Request as FuseRequest;
+
 use crate::{Registry, File, Directory};
 use crate::engine::Engine;
 use crate::handler::{Handle, HandleDispatcher::*};
@@ -8,7 +10,7 @@ use crate::utils::InoGenerator;
 /// This object gets handed down to functions implementing a File System Handle trait, such as
 /// File or Directory. The controller exposes information about the Handles context and can also
 /// be used to manipulate (e.g. delete) the Handle.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Controller {
     this_ino : u64,
 
@@ -86,6 +88,39 @@ impl Controller {
         }
     }
 
+}
 
+#[derive (Clone, Debug)]
+pub struct Request {
+    id : u64,
+    uid : u32,
+    gid : u32,
+    pid : u32,
+}
 
+impl Request {
+    pub(crate) fn new(req : &FuseRequest) -> Self {
+        Request {
+            id : req.unique(),
+            uid : req.uid(),
+            gid : req.gid(),
+            pid : req.pid(),
+        }
+    }
+
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
+    pub fn uid(&self) -> u32 {
+        self.uid
+    }
+
+    pub fn gid(&self) -> u32 {
+        self.gid
+    }
+
+    pub fn pid(&self) -> u32 {
+        self.pid
+    }
 }

@@ -25,10 +25,8 @@ use std::collections::BTreeMap;
 use parking_lot::RwLock;
 
 use crate::link::NodeEntry;
-
+pub use crate::controller::Request;
 use crate::error::{NodeError, FileError, DirError};
-
-pub use fuse::Request;
 
 
 pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, Handle>>>;
@@ -47,7 +45,7 @@ pub trait Node {
 
     fn init(&mut self, _: Controller) {}
 
-    fn read_attributes(&mut self, _: &Request, _: NodeEntry) -> Result<NodeEntry, NodeError> {
+    fn read_attributes(&mut self, _: Request, _: NodeEntry) -> Result<NodeEntry, NodeError> {
         Err(NodeError::new(NodeError::NotImplemented))
     }
 
@@ -56,11 +54,11 @@ pub trait Node {
 
 pub trait Directory: Node {
 
-    fn lookup(&mut self, _: &Request, _: String) -> Result<NodeEntry, NodeError> {
+    fn lookup(&mut self, _: Request, _: String) -> Result<NodeEntry, NodeError> {
         Err(NodeError::new(NodeError::NotImplemented))
     }
 
-    fn readdir(&mut self, _: &Request) -> Result<Vec<NodeEntry>, DirError> {
+    fn readdir(&mut self, _: Request) -> Result<Vec<NodeEntry>, DirError> {
         Err(DirError::new(NodeError::NotImplemented))
     }
 
@@ -68,7 +66,7 @@ pub trait Directory: Node {
 
 pub trait File: Node {
 
-    fn read(&mut self, _: &Request) -> Result<Vec<u8>, FileError> {
+    fn read(&mut self, _: Request) -> Result<Vec<u8>, FileError> {
         Err(FileError::new(NodeError::NotImplemented))
     }
 

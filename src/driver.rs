@@ -3,11 +3,13 @@ use std::ffi::OsStr;
 
 use libc::*;
 
-use fuse::{Filesystem, Request, ReplyDirectory, ReplyData, ReplyEntry, ReplyAttr};
+use fuse::{Filesystem, ReplyDirectory, ReplyData, ReplyEntry, ReplyAttr};
+use fuse::Request as FuseRequest;
 
 use crate::handler::HandleDispatcher::*;
 use crate::utils::InoGenerator;
 use crate::link::NodeEntry;
+use crate::controller::Request;
 use crate::Registry;
 
 
@@ -46,14 +48,15 @@ impl Driver {
 // TODO: Implement macros to check if directory or file with appropriate errors
 impl Filesystem for Driver {
 
-    fn lookup(&mut self, req: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {
+    fn lookup(&mut self, req: &FuseRequest, parent: u64, name: &OsStr, reply: ReplyEntry) {
 
         let handle = get_handle!(self, parent, reply);
+        let request = Request::new(req);
         let n = name.to_string_lossy().to_string();
 
         let result = match handle.write().dispatch() {
             Dir(ref mut dir) => {
-                dir.lookup(req, n)
+                dir.lookup(request, n)
             }
             _ => {
                 reply.error(ENOTDIR);
@@ -71,17 +74,18 @@ impl Filesystem for Driver {
 
     }
 
-    fn getattr(&mut self, req: &Request, ino: u64, reply: ReplyAttr) {
+    fn getattr(&mut self, req: &FuseRequest, ino: u64, reply: ReplyAttr) {
 
         let handle = get_handle!(self, ino, reply);
+        let request = Request::new(req);
         let base_entry = NodeEntry::new("".to_string(), handle.clone());
 
         let result = match handle.write().dispatch() {
             Dir(ref mut dir) => {
-                dir.read_attributes(req, base_entry)
+                dir.read_attributes(request, base_entry)
             }
             RegularFile(ref mut file) => {
-                file.read_attributes(req, base_entry)
+                file.read_attributes(request, base_entry)
             }
         };
 
@@ -93,14 +97,15 @@ impl Filesystem for Driver {
     }
 
     // TODO: Implement correct behaviour of offset and size... how to handle streaming?
-    fn read(&mut self, req: &Request, ino: u64, _fh: u64,
+    fn read(&mut self, req: &FuseRequest, ino: u64, _fh: u64,
             offset: i64, size: u32, reply: ReplyData) {
 
         let handle = get_handle!(self, ino, reply);
+        let request = Request::new(req);
 
         let result = match handle.write().dispatch() {
             RegularFile(ref mut file) => {
-                file.read(req)
+                file.read(request)
             }
             _ => {
                 reply.error(EISDIR);
@@ -122,16 +127,16 @@ impl Filesystem for Driver {
 
     }
 
-    fn readdir(&mut self, req: &Request, ino: u64, _fh: u64,
+    fn readdir(&mut self, req: &FuseRequest, ino: u64, _fh: u64,
                offset: i64, mut reply: ReplyDirectory) {
 
         let handle = get_handle!(self, ino, reply);
-
+        let request = Request::new(req);
         // Check that the handle references a directory
         let result = match handle.write().dispatch() {
             // Check that this is actually a directory
             Dir(ref mut dir) => {
-                dir.readdir(req)
+                dir.readdir(request)
             },
             _ => {
                 reply.error(ENOTDIR);

@@ -57,7 +57,7 @@ impl Node for StaticDir {
         self.write().handle = Some(controller.get_handle());
     }
 
-    fn read_attributes(&mut self, _req: &Request,
+    fn read_attributes(&mut self, _req: Request,
                        mut attr: NodeEntry) -> Result<NodeEntry, NodeError> {
         println!("Requested attributes on static dir");
 
@@ -71,7 +71,7 @@ impl Node for StaticDir {
 
 impl Directory for StaticDir {
 
-    fn readdir(&mut self, _req: &Request) -> Result<Vec<NodeEntry>, DirError> {
+    fn readdir(&mut self, _req: Request) -> Result<Vec<NodeEntry>, DirError> {
         println!("Readdir on static dir");
         let mut vec = vec!{
                 NodeEntry::new(".".to_string(), self.read().handle.clone().unwrap()),
@@ -81,7 +81,7 @@ impl Directory for StaticDir {
         Ok(vec)
     }
 
-    fn lookup(&mut self, _req: &Request, name: String) -> Result<NodeEntry, NodeError> {
+    fn lookup(&mut self, _req: Request, name: String) -> Result<NodeEntry, NodeError> {
         println!("Lookup on static dir, name: {}", name);
         if name == "." || name == ".." {
             return Ok(NodeEntry::new(name, self.read().handle.clone().unwrap()))
@@ -120,7 +120,7 @@ impl Node for StaticFile {
         self.handle = Some(controller.get_handle());
     }
 
-    fn read_attributes(&mut self, _req: &Request, mut attr: NodeEntry)
+    fn read_attributes(&mut self, _req: Request, mut attr: NodeEntry)
             -> Result<NodeEntry, NodeError> {
 
         println!("Requested attributes on static file");
@@ -137,7 +137,7 @@ impl Node for StaticFile {
 
 impl File for StaticFile {
 
-    fn read(&mut self, _req: &Request) -> Result<Vec<u8>, FileError> {
+    fn read(&mut self, _req: Request) -> Result<Vec<u8>, FileError> {
         println!("Request read on static file");
         Ok(self.text.clone().into_bytes())
     }
