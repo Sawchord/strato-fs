@@ -9,6 +9,9 @@ use std::process::Command;
 
 use parking_lot::RwLock;
 
+use futures::future;
+use futures::future::Future;
+
 use time;
 
 use strato::{Node, Directory, File, Request};
@@ -137,9 +140,9 @@ impl Node for StaticFile {
 
 impl File for StaticFile {
 
-    fn read(&mut self, _req: Request) -> Result<Vec<u8>, FileError> {
+    fn read(&mut self, _req: Request) -> Box<Future<Item=Vec<u8>, Error=FileError> + Send> {
         println!("Request read on static file");
-        Ok(self.text.clone().into_bytes())
+        Box::new(future::ok(self.text.clone().into_bytes()))
     }
 
 }

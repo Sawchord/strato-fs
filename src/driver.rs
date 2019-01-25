@@ -6,6 +6,8 @@ use libc::*;
 use fuse::{Filesystem, ReplyDirectory, ReplyData, ReplyEntry, ReplyAttr};
 use fuse::Request as FuseRequest;
 
+use futures::sync::mpsc::UnboundedSender;
+
 use crate::handler::HandleDispatcher::*;
 use crate::utils::InoGenerator;
 use crate::link::NodeEntry;
@@ -30,14 +32,17 @@ macro_rules! get_handle {
 
 pub(crate) struct Driver {
     registry : Registry,
+    channel : UnboundedSender<ChannelEvent>
     //ino_generator : Arc<InoGenerator>,
 }
 
 impl Driver {
 
-    pub(crate) fn new(registry: Registry, _ino_generator : Arc<InoGenerator>) -> Self {
+    pub(crate) fn new(registry: Registry, _ino_generator : Arc<InoGenerator>,
+    channel : UnboundedSender<ChannelEvent>) -> Self {
         Driver {
             registry : registry.clone(),
+            channel,
             //ino_generator : ino_generator.clone(),
         }
     }
@@ -97,34 +102,37 @@ impl Filesystem for Driver {
     }
 
     // TODO: Implement correct behaviour of offset and size... how to handle streaming?
-    fn read(&mut self, req: &FuseRequest, ino: u64, _fh: u64,
+    fn read(&mut self, request: &FuseRequest, ino: u64, fh: u64,
             offset: i64, size: u32, reply: ReplyData) {
-
-        let handle = get_handle!(self, ino, reply);
-        let request = Request::new(req);
-
-        let result = match handle.write().dispatch() {
-            RegularFile(ref mut file) => {
-                file.read(request)
-            }
-            _ => {
-                reply.error(EISDIR);
-            return;
-            }
-        };
-
-        match result {
-            Ok(vec) => {
-                println!("Request params: Offset {} Size {}", offset, size);
-                reply.data(&vec[offset as usize..]);
-            }
-            Err(error) => {
-                reply.error(error.get_libc_code());
-            }
-        }
-
-
-
+        let req = Request::new(request);
+        self.channel.unbounded_send(ChannelEvent::Read {
+            req,
+            ino,
+            fh,
+            offset,
+            size,
+            reply
+        });
+//        let handle = get_handle!(self, ino, reply);
+//        let result = match handle.write().dispatch() {
+//            RegularFile(ref mut file) => {
+//                file.read(req)
+//            }
+//            _ => {
+//                reply.error(EISDIR);
+//            return;
+//            }
+//        };
+//
+//        match result {
+//            Ok(vec) => {
+//                println!("Request params: Offset {} Size {}", offset, size);
+//                reply.data(&vec[offset as usize..]);
+//            }
+//            Err(error) => {
+//                reply.error(error.get_libc_code());
+//            }
+//        }
     }
 
     fn readdir(&mut self, req: &FuseRequest, ino: u64, _fh: u64,
@@ -161,7 +169,11 @@ impl Filesystem for Driver {
         }
     }
 
+}
 
+#[derive(Debug)]
+pub(crate) enum ChannelEvent {
+    Read{req: Request, ino: u64, fh: u64, offset: i64, size: u32, reply: ReplyData},
 }
 
 

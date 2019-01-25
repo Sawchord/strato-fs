@@ -29,15 +29,17 @@ pub use crate::controller::Request;
 use crate::error::{NodeError, FileError, DirError};
 
 
+use futures::future;
+use futures::future::Future;
+
 pub(crate) type Registry = Arc<RwLock<BTreeMap<u64, Handle>>>;
 
 pub(crate) type FileImpl = Box<dyn File + Send + Sync>;
 pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;
 
 
-// TODO: Implement own Request type which is Cloneable, and contains information about offset and size
-
 // TODO: F U T U R E S
+// TODO: Add proper logging support
 
 /// This trait contains all the base functions, that need to be implemented for the object
 /// to behave as a node in the file system.
@@ -66,8 +68,8 @@ pub trait Directory: Node {
 
 pub trait File: Node {
 
-    fn read(&mut self, _: Request) -> Result<Vec<u8>, FileError> {
-        Err(FileError::new(NodeError::NotImplemented))
+    fn read(&mut self, _: Request) -> Box<dyn Future<Item=Vec<u8>, Error=FileError> + Send> {
+        Box::new(future::err(FileError::new(NodeError::NotImplemented)))
     }
 
 }
