@@ -24,7 +24,7 @@ impl Controller {
     pub fn get_handle(&self) -> ProtectedHandle {
         self.handle.clone()
     }
-    
+
 
     pub(crate) fn create_from_engine(engine: &Engine, ino: u64, handle : ProtectedHandle) -> Self {
         Controller {

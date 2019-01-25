@@ -32,8 +32,10 @@ pub(crate) type DirImpl = Box<dyn Directory + Send + Sync>;
 
 
 // TODO: Implement Error Types
-// TODO: Clean up handler
+// TODO: Rename Handler to HandlerInner and make concrete Type out of ProtectedHandler and name it Handler
 // TODO: Implement own Request type which is Cloneable, and contains information about offset and size
+
+// TODO: F U T U R E S
 
 /// This trait contains all the base functions, that need to be implemented for the object
 /// to behave as a node in the file system.

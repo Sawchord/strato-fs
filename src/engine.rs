@@ -8,7 +8,7 @@ use std::io;
 use fuse::BackgroundSession;
 
 use crate::{File, Directory, Registry};
-use crate::handler::{ProtectedHandle, Handle, HandleDispatcher};
+use crate::handler::{ProtectedHandle, Handle};
 use crate::controller::Controller;
 use crate::driver::Driver;
 use crate::utils::InoGenerator;
