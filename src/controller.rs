@@ -4,7 +4,6 @@ use crate::Registry;
 use crate::engine::Engine;
 use crate::handler::ProtectedHandle;
 use crate::utils::InoGenerator;
-use crate::driver::Driver;
 
 /// This object gets handed down to functions implementing a File System Handle trait, such as
 /// File or Directory. The controller exposes information about the Handles context and can also
@@ -25,18 +24,7 @@ impl Controller {
     pub fn get_handle(&self) -> ProtectedHandle {
         self.handle.clone()
     }
-
-
-//    pub(crate) fn create_from_driver(driver: &Driver, ino: u64, handle : ProtectedHandle) -> Self {
-//        Controller {
-//            this_ino : ino,
-//
-//            ino_generator : driver.get_ino_generator(),
-//            registry : driver.get_registry(),
-//
-//            handle,
-//        }
-//    }
+    
 
     pub(crate) fn create_from_engine(engine: &Engine, ino: u64, handle : ProtectedHandle) -> Self {
         Controller {

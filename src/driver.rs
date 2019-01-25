@@ -33,16 +33,16 @@ pub(crate) struct Driver {
 
 impl Driver {
 
-    pub(crate) fn new(registry: Registry, ino_generator : Arc<InoGenerator>) -> Self {
+    pub(crate) fn new(registry: Registry, _ino_generator : Arc<InoGenerator>) -> Self {
         Driver {
             registry : registry.clone(),
             //ino_generator : ino_generator.clone(),
         }
     }
 
-    pub(crate) fn get_registry(&self) -> Registry {
-        self.registry.clone()
-    }
+    //pub(crate) fn get_registry(&self) -> Registry {
+    //    self.registry.clone()
+    //}
 
     //pub(crate) fn get_ino_generator(&self) -> Arc<InoGenerator> {
     //    self.ino_generator.clone()
@@ -61,7 +61,7 @@ impl Filesystem for Driver {
 
         let result = match handle.write().dispatch() {
             HandleDispatcher::Dir(ref mut dir) => {
-                dir.get_object().lookup(req, n)
+                dir.lookup(req, n)
             }
             _ => {
                 reply.error(ENOTDIR);
@@ -88,10 +88,10 @@ impl Filesystem for Driver {
 
         let result = match handle.write().dispatch() {
             HandleDispatcher::Dir(ref mut dir) => {
-                dir.get_object().read_attributes(req, base_entry)
+                dir.read_attributes(req, base_entry)
             }
             HandleDispatcher::File(ref mut file) => {
-                file.get_object().read_attributes(req, base_entry)
+                file.read_attributes(req, base_entry)
             }
         };
 
@@ -110,7 +110,7 @@ impl Filesystem for Driver {
 
         let result = match handle.write().dispatch() {
             HandleDispatcher::File(ref mut file) => {
-                file.get_object().read(req)
+                file.read(req)
             }
             _ => {
                 reply.error(EISDIR);
@@ -141,7 +141,7 @@ impl Filesystem for Driver {
         let result = match handle.write().dispatch() {
             // Check that this is actually a directory
             HandleDispatcher::Dir(ref mut dir) => {
-                dir.get_object().readdir(req)
+                dir.readdir(req)
             },
             _ => {
                 reply.error(ENOTDIR);

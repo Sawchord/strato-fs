@@ -65,7 +65,7 @@ impl<'a> Engine<'a> {
 
         let controller = Controller::create_from_engine(self, ino, handle.clone());
         if let HandleDispatcher::File(ref mut file) = handle.write().dispatch() {
-            file.get_object().init(controller)
+            file.init(controller)
         } else {
             // Can not happen
             panic!();
@@ -84,7 +84,7 @@ impl<'a> Engine<'a> {
 
         let controller = Controller::create_from_engine(self, ino, handle.clone());
         if let HandleDispatcher::Dir(ref mut dir) = handle.write().dispatch() {
-            dir.get_object().init(controller)
+            dir.init(controller)
         } else {
             // Can not happen
             panic!();
