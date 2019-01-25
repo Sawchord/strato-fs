@@ -6,7 +6,6 @@ use libc::*;
 use fuse::{Filesystem, Request, ReplyDirectory, ReplyData, ReplyEntry, ReplyAttr};
 
 use crate::handler::HandleDispatcher;
-use crate::controller::Controller;
 use crate::utils::InoGenerator;
 use crate::link::DirectoryEntry;
 use crate::Registry;
@@ -29,7 +28,7 @@ macro_rules! get_handle {
 
 pub(crate) struct Driver {
     registry : Registry,
-    ino_generator : Arc<InoGenerator>,
+    //ino_generator : Arc<InoGenerator>,
 }
 
 impl Driver {
@@ -37,7 +36,7 @@ impl Driver {
     pub(crate) fn new(registry: Registry, ino_generator : Arc<InoGenerator>) -> Self {
         Driver {
             registry : registry.clone(),
-            ino_generator : ino_generator.clone(),
+            //ino_generator : ino_generator.clone(),
         }
     }
 
@@ -45,9 +44,9 @@ impl Driver {
         self.registry.clone()
     }
 
-    pub(crate) fn get_ino_generator(&self) -> Arc<InoGenerator> {
-        self.ino_generator.clone()
-    }
+    //pub(crate) fn get_ino_generator(&self) -> Arc<InoGenerator> {
+    //    self.ino_generator.clone()
+    //}
 
 }
 
@@ -58,12 +57,11 @@ impl Filesystem for Driver {
     fn lookup(&mut self, req: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {
 
         let handle = get_handle!(self, parent, reply);
-        let controller = Controller::create_from_driver(self, parent, handle.clone());
         let n = name.to_string_lossy().to_string();
 
         let result = match handle.write().dispatch() {
             HandleDispatcher::Dir(ref mut dir) => {
-                dir.get_object().lookup(controller, req, n)
+                dir.get_object().lookup(req, n)
             }
             _ => {
                 reply.error(ENOTDIR);
@@ -87,14 +85,13 @@ impl Filesystem for Driver {
 
         let handle = get_handle!(self, ino, reply);
         let base_entry = DirectoryEntry::new("".to_string(), handle.clone());
-        let controller = Controller::create_from_driver(self, ino, handle.clone());
 
         let result = match handle.write().dispatch() {
             HandleDispatcher::Dir(ref mut dir) => {
-                dir.get_object().read_attributes(controller, req, base_entry)
+                dir.get_object().read_attributes(req, base_entry)
             }
             HandleDispatcher::File(ref mut file) => {
-                file.get_object().read_attributes(controller, req, base_entry)
+                file.get_object().read_attributes(req, base_entry)
             }
         };
 
@@ -110,11 +107,10 @@ impl Filesystem for Driver {
             offset: i64, size: u32, reply: ReplyData) {
 
         let handle = get_handle!(self, ino, reply);
-        let controller = Controller::create_from_driver(self, ino, handle.clone());
 
         let result = match handle.write().dispatch() {
             HandleDispatcher::File(ref mut file) => {
-                file.get_object().read(controller, req)
+                file.get_object().read(req)
             }
             _ => {
                 reply.error(EISDIR);
@@ -140,13 +136,12 @@ impl Filesystem for Driver {
                offset: i64, mut reply: ReplyDirectory) {
 
         let handle = get_handle!(self, ino, reply);
-        let controller = Controller::create_from_driver(self, ino, handle.clone());
 
         // Check that the handle references a directory
         let result = match handle.write().dispatch() {
             // Check that this is actually a directory
             HandleDispatcher::Dir(ref mut dir) => {
-                dir.get_object().readdir(controller, req)
+                dir.get_object().readdir(req)
             },
             _ => {
                 reply.error(ENOTDIR);

@@ -27,16 +27,16 @@ impl Controller {
     }
 
 
-    pub(crate) fn create_from_driver(driver: &Driver, ino: u64, handle : ProtectedHandle) -> Self {
-        Controller {
-            this_ino : ino,
-
-            ino_generator : driver.get_ino_generator(),
-            registry : driver.get_registry(),
-
-            handle,
-        }
-    }
+//    pub(crate) fn create_from_driver(driver: &Driver, ino: u64, handle : ProtectedHandle) -> Self {
+//        Controller {
+//            this_ino : ino,
+//
+//            ino_generator : driver.get_ino_generator(),
+//            registry : driver.get_registry(),
+//
+//            handle,
+//        }
+//    }
 
     pub(crate) fn create_from_engine(engine: &Engine, ino: u64, handle : ProtectedHandle) -> Self {
         Controller {

@@ -41,7 +41,7 @@ pub trait Node {
 
     fn init(&mut self, _: Controller) {}
 
-    fn read_attributes(&mut self, _: Controller, _: &Request, _: DirectoryEntry)
+    fn read_attributes(&mut self, _: &Request, _: DirectoryEntry)
         -> Option<DirectoryEntry> {
         None
     }
@@ -51,11 +51,11 @@ pub trait Node {
 
 pub trait Directory: Node {
 
-    fn lookup(&mut self, _: Controller, _: &Request, _: String) -> Option<DirectoryEntry> {
+    fn lookup(&mut self, _: &Request, _: String) -> Option<DirectoryEntry> {
         None
     }
 
-    fn readdir(&mut self, _: Controller, _: &Request) -> Option<Vec<DirectoryEntry>> {
+    fn readdir(&mut self, _: &Request) -> Option<Vec<DirectoryEntry>> {
         None
     }
 
@@ -63,7 +63,7 @@ pub trait Directory: Node {
 
 pub trait File: Node {
 
-    fn read(&mut self, _: Controller, _: &Request) -> Option<Vec<u8>> {
+    fn read(&mut self, _: &Request) -> Option<Vec<u8>> {
         None
     }
 
