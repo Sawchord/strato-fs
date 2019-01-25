@@ -7,8 +7,17 @@ use self::NodeError::*;
 use self::FileError::*;
 use self::DirError::*;
 
+use std::any::Any;
 
-#[derive (Debug)]
+pub trait IsFileError {}
+pub trait IsDirError {}
+impl IsFileError for NodeError{}
+impl IsDirError for NodeError{}
+impl IsFileError for FileError{}
+impl IsDirError for DirError{}
+
+
+#[derive (Debug, Clone)]
 pub enum NodeError {
     NotImplemented,
     IOError,
@@ -16,6 +25,7 @@ pub enum NodeError {
     TryAgain,
     ReadOnly,
 }
+
 
 impl Display for NodeError {
     fn fmt(&self, f: &mut Formatter) -> Result {
@@ -28,7 +38,7 @@ impl Error for NodeError {
         match *self {
             NotImplemented => "The requested operation is not implemented",
             IOError => "An I/O Error occurred",
-            PermissionDenied => "The user has no permission to execute this operation",
+            PermissionDenied => "The user does not have permission to execute the operation",
             TryAgain => "Try again later",
             ReadOnly => "This is a ReadOnly file system",
         }
@@ -50,13 +60,14 @@ impl NodeError {
 
 
 
-#[derive (Debug)]
+#[derive (Debug, Clone)]
 pub enum FileError {
     FileNodeErr(NodeError),
     NoSuchFile,
     IsDirectory,
     FileExists,
 }
+
 
 impl Display for FileError {
     fn fmt(&self, f: &mut Formatter) -> Result {
@@ -75,8 +86,22 @@ impl Error for FileError {
     }
 }
 
-
 impl FileError {
+
+    pub fn new<T: Any + IsFileError>(val: T) -> Self {
+        let val_ref = &val;
+        let val_any = val_ref as &dyn Any;
+
+        if let Some(node_err) = val_any.downcast_ref::<NodeError>() {
+            FileNodeErr(node_err.clone())
+        } else if let Some (file_err) = val_any.downcast_ref::<FileError>() {
+            file_err.clone()
+        } else {
+            FileNodeErr(NotImplemented)
+        }
+    }
+
+
     pub(crate) fn get_libc_code(&self) -> i32 {
         match *self {
             FileNodeErr(ref inner) => inner.get_libc_code(),
@@ -88,7 +113,7 @@ impl FileError {
 }
 
 
-#[derive (Debug)]
+#[derive (Debug, Clone)]
 pub enum DirError {
     DirNodeErr(NodeError),
     NoSuchDirectory,
@@ -116,6 +141,21 @@ impl Error for DirError {
 
 
 impl DirError {
+
+    pub fn new<T: Any + IsDirError>(val: T) -> Self {
+        let val_ref = &val;
+        let val_any = val_ref as &dyn Any;
+
+        if let Some(node_err) = val_any.downcast_ref::<NodeError>() {
+            DirNodeErr(node_err.clone())
+        } else if let Some (dir_err) = val_any.downcast_ref::<DirError>() {
+            dir_err.clone()
+        } else {
+            DirNodeErr(NotImplemented)
+        }
+    }
+
+
     pub(crate) fn get_libc_code(&self) -> i32 {
         match *self {
             DirNodeErr(ref inner) => inner.get_libc_code(),
@@ -126,16 +166,20 @@ impl DirError {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-
-    fn description() {
-        use super::*;
-        let error1 = IsNotDirectory;
-        let error2 = FileNodeErr(PermissionDenied);
-
-        println!("Error: {}", error1);
-        println!("Error: {}", error2);
-    }
-}
+//#[cfg(test)]
+//mod tests {
+//    #[test]
+//
+//    fn description() {
+//        use super::*;
+//        let error1 = FileError::new(NoSuchFile);
+//        let error2 = FileError::new(PermissionDenied);
+//        let error3 = DirError::new(IsNotDirectory);
+//        let error4 = DirError::new(ReadOnly);
+//
+//        println!("Error: {}", error1);
+//        println!("Error: {}", error2);
+//        println!("Error: {}", error3);
+//        println!("Error: {}", error4);
+//    }
+//}
