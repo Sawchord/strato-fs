@@ -9,8 +9,10 @@ use std::process::Command;
 
 use parking_lot::RwLock;
 
-use futures::future;
-use futures::future::Future;
+//use futures::future;
+//use futures::future::Future;
+
+use tokio::prelude::*;
 
 use time;
 
@@ -62,7 +64,7 @@ impl Node for StaticDir {
 
     fn read_attributes(&mut self, _req: Request,
                        mut attr: NodeEntry) -> Result<NodeEntry, NodeError> {
-        println!("Requested attributes on static dir");
+        //println!("Requested attributes on static dir");
 
         attr.mtime(time::get_time());
         attr.ttl(time::get_time() + time::Duration::seconds(20));
@@ -99,18 +101,20 @@ impl Directory for StaticDir {
     }
 }
 
-
+#[derive(Clone, Debug)]
 struct StaticFile {
     handle: Option<Handle>,
     text: String,
+    delay: u32,
 }
 
 impl StaticFile {
 
-    fn new(text: String) -> Self {
+    fn new(text: String, delay: u32) -> Self {
         StaticFile{
             handle: None,
             text,
+            delay
         }
     }
 
@@ -126,10 +130,10 @@ impl Node for StaticFile {
     fn read_attributes(&mut self, _req: Request, mut attr: NodeEntry)
             -> Result<NodeEntry, NodeError> {
 
-        println!("Requested attributes on static file");
+        //println!("Requested attributes on static file");
 
-        attr.mtime(time::get_time());
-        attr.ttl(time::get_time() + time::Duration::seconds(20));
+        attr.mtime(time::get_time() - time::Duration::seconds(20));
+        attr.ttl(time::get_time() + time::Duration::seconds(1));
 
         attr.size(self.text.len() as u64);
 
@@ -142,7 +146,15 @@ impl File for StaticFile {
 
     fn read(&mut self, _req: Request) -> Box<Future<Item=Vec<u8>, Error=FileError> + Send> {
         println!("Request read on static file");
-        Box::new(future::ok(self.text.clone().into_bytes()))
+
+        let del = std::time::Instant::now() + std::time::Duration::from_secs(self.delay as u64);
+        let cl = self.clone();
+
+        Box::new(tokio::timer::Delay::new(del)
+            .then( move |_| {
+                future::ok(cl.text.clone().into_bytes())
+            }))
+
     }
 
 }
@@ -181,10 +193,10 @@ fn main() {
     let mut engine = Engine::new(&mountpoint, root.clone());
 
 
-    let text_handle = engine.add_file(StaticFile::new("Hello World\n".to_string()));
+    let text_handle = engine.add_file(StaticFile::new("Hello World\n".to_string(), 10));
     root.add(NodeEntry::new("hello.txt".to_string(), text_handle));
 
-    let text_handle = engine.add_file(StaticFile::new("Goodbeye World\n".to_string()));
+    let text_handle = engine.add_file(StaticFile::new("Goodbeye World\n".to_string(), 5));
     root.add(NodeEntry::new("goodbye.txt".to_string(), text_handle));
 
 

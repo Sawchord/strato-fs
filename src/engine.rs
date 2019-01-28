@@ -10,18 +10,14 @@ use fuse::BackgroundSession;
 
 use libc::*;
 
+use tokio::prelude::*;
 use futures::sync::mpsc::{UnboundedSender, UnboundedReceiver};
-use futures::stream::Stream;
-use futures::future;
-use futures::future::Future;
-use tokio;
 
 use crate::{File, Directory, Registry};
 use crate::handler::{Handle, HandleDispatcher::*};
 use crate::controller::Controller;
 use crate::driver::{Driver, ChannelEvent};
 use crate::utils::InoGenerator;
-use crate::error::FileError;
 
 macro_rules! get_handle {
     ($registry: ident, $ino: ident, $reply:ident) => [
@@ -152,7 +148,7 @@ impl<'a> Engine<'a> {
                             return future::ok(());
                         }
                     };
-                    
+
                     let finish: Box<dyn Future<Item=(), Error=()> + Send>
                     = Box::new(file_op.then(move |result|{
 
