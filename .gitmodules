@@ -1,3 +1,0 @@
-[submodule "rust-fuse"]
-	path = rust-fuse
-	url = git@github.com:zargony/rust-fuse.git
