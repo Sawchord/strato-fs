@@ -13,8 +13,8 @@ use fuse_sys::abi::*;
 use fuse_sys::abi::consts::*;
 use fuse_sys::abi::fuse_opcode::*;
 
-use crate::request::FuseRequest;
-
+use crate::request::{FuseRequest, FuseRequestBody};
+use crate::request::FuseRequestBody::*;
 
 pub(crate) enum FuseRequestDecoder {
     DecodingHeader(),
@@ -33,6 +33,10 @@ impl FuseRequestDecoder {
 
 }
 
+macro_rules! req {($header: ident, $body: ident)
+    => [Ok(Some(FuseRequest::new($header, $body)))]
+}
+
 impl Decoder for FuseRequestDecoder {
 
     type Item = FuseRequest;
@@ -44,18 +48,179 @@ impl Decoder for FuseRequestDecoder {
             return Err(Error::new(InvalidInput, "The header was to short"));
         }
 
-        //let header = fetch::<fuse_in_header>(src);
-//
-//        match fuse_opcode::from_u32(header.opcode) {
-//            _=> ()
-//        }
+        let header = fetch::<fuse_in_header>(src);
 
+        let opcode = match fuse_opcode::from_u32(header.opcode) {
+            None => {
+                warn!("Unknown FUSE operation {} ... skipped", header.opcode);
+                return Err(Error::new(InvalidInput, "Unknown FUSE opcode"));
+            },
+            Some (op) => op,
+        };
 
+        match opcode {
 
-        Err(Error::new(Other, "Unimplemented"))
+            FUSE_INIT => {
+                let body = Init(fetch(src));
+                req!(header, body)
+            },
+            FUSE_DESTROY => {
+                let body = Destroy();
+                req!(header, body)
+            }
+            FUSE_INTERRUPT => {
+                return Err(Error::new(Other, "Interrupting is not implemented"));
+            }
+            FUSE_LOOKUP => {
+                let body = Lookup(fetch_str(src));
+                req!(header, body)
+            }
+            FUSE_FORGET => {
+                let body = Forget(fetch(src));
+                req!(header, body)
+            }
+            FUSE_GETATTR => {
+                let body = GetAttr();
+                req!(header, body)
+            }
+            FUSE_SETATTR => {
+                let body = SetAttr(fetch(src));
+                req!(header, body)
+            }
+            FUSE_READLINK => {
+                let body = ReadLink();
+                req!(header, body)
+            }
+            FUSE_MKNOD => {
+                let body = MkNod(fetch(src));
+                req!(header, body)
+            }
+            FUSE_MKDIR => {
+                let body = MkDir(fetch(src));
+                req!(header, body)
+            }
+            FUSE_UNLINK => {
+                let body = Unlink(fetch_str(src));
+                req!(header, body)
+            }
+            FUSE_RMDIR => {
+                let body = RmDir(fetch_str(src));
+                req!(header, body)
+            }
+            FUSE_SYMLINK => {
+                let body = Symlink(fetch_str(src), fetch_path(src));
+                req!(header, body)
+            }
+            FUSE_RENAME => {
+                let body = Rename(fetch(src), fetch_str(src), fetch_str(src));
+                req!(header, body)
+            }
+            FUSE_LINK => {
+                let body = Link(fetch(src), fetch_str(src));
+                req!(header, body)
+            }
+            FUSE_OPEN => {
+                let body = Open(fetch(src));
+                req!(header, body)
+            }
+            FUSE_READ => {
+                let body = Read(fetch(src));
+                req!(header, body)
+            }
+            FUSE_WRITE => {
+                let body = Write(fetch(src), src.to_vec());
+                req!(header, body)
+            }
+            FUSE_FLUSH => {
+                let body = Flush(fetch(src));
+                req!(header, body)
+            }
+            FUSE_RELEASE => {
+                let body = Release(fetch(src));
+                req!(header, body)
+            }
+            FUSE_FSYNC => {
+                let body = FSync(fetch(src));
+                req!(header, body)
+            }
+            FUSE_OPENDIR => {
+                let body = OpenDir(fetch(src));
+                req!(header, body)
+            }
+            FUSE_READDIR => {
+                let body = ReadDir(fetch(src));
+                req!(header, body)
+            }
+            FUSE_RELEASEDIR => {
+                let body = ReleaseDir(fetch(src));
+                req!(header, body)
+            }
+            FUSE_FSYNCDIR => {
+                let body = FSyncDir(fetch(src));
+                req!(header, body)
+            }
+            FUSE_STATFS => {
+                let body = StatFS();
+                req!(header, body)
+            }
+            FUSE_SETXATTR => {
+                let body = SetXAttr(fetch(src), src.to_vec());
+                req!(header, body)
+            }
+            FUSE_GETXATTR => {
+                let body = GetXAttr(fetch(src));
+                req!(header, body)
+            }
+            FUSE_LISTXATTR => {
+                let body = ListXAttr(fetch(src));
+                req!(header, body)
+            }
+            FUSE_REMOVEXATTR => {
+                let body = RemoveXAttr(fetch(src));
+                req!(header, body)
+            }
+            FUSE_ACCESS => {
+                let body = Access(fetch(src));
+                req!(header, body)
+            }
+            FUSE_CREATE => {
+                let body = Create(fetch(src));
+                req!(header, body)
+            }
+            FUSE_GETLK => {
+                let body = GetLock(fetch(src));
+                req!(header, body)
+            }
+            FUSE_SETLK | FUSE_SETLKW => {
+                let body = SetLock(fetch(src));
+                req!(header, body)
+            }
+            FUSE_BMAP => {
+                let body = Bmap(fetch(src));
+                req!(header, body)
+            }
+            #[cfg(target_os = "macos")]
+            FUSE_SETVOLUMENAME => {
+                let body = SetVolumeName(fetch_str(src));
+                req!(header, body)
+            }
+            #[cfg(target_os = "macos")]
+            FUSE_EXCHANGE => {
+                let body = Exchange(fetch(src));
+                req!(header, body)
+            }
+            #[cfg(target_os = "macos")]
+            FUSE_GETXTIMES => {
+                let body = GetXTimes();
+                req!(header, body)
+            }
+
+        }
+
     }
 
 }
+
 
 
 /// Helper functions

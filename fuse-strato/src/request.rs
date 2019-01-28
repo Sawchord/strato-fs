@@ -12,6 +12,12 @@ pub(crate) struct FuseRequest  {
     body: FuseRequestBody,
 }
 
+impl FuseRequest {
+    pub(crate) fn new(header: fuse_in_header, body: FuseRequestBody) -> Self {
+        FuseRequest {header, body}
+    }
+}
+
 
 #[derive(Debug)]
 pub(crate) enum FuseRequestBody {
@@ -43,7 +49,7 @@ pub(crate) enum FuseRequestBody {
     ReleaseDir(fuse_release_in),
     FSyncDir(fuse_fsync_in),
     StatFS(),
-    SetXAttr(fuse_setxattr_in),
+    SetXAttr(fuse_setxattr_in, Vec<u8>),
     GetXAttr(fuse_getxattr_in),
     ListXAttr(fuse_getxattr_in),
     RemoveXAttr(OsString),
