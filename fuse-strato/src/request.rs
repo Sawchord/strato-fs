@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use std::ffi::OsString;
+
 use fuse_sys::abi::*;
 use fuse_sys::abi::consts::*;
 use fuse_sys::abi::fuse_opcode::*;
@@ -17,19 +19,19 @@ pub(crate) enum FuseRequestBody {
     Destroy(),
     // TODO: Unimplemented
     Interrupt(),
-    Lookup(String),
+    Lookup(OsString),
     Forget(fuse_forget_in),
     GetAttr(),
     SetAttr(fuse_setattr_in),
     ReadLink(),
     MkNod(fuse_mknod_in),
-    MkDir(String),
-    Unlink(String),
-    RmDir(String),
+    MkDir(OsString),
+    Unlink(OsString),
+    RmDir(OsString),
     // TODO: Implement Path
-    Symlink(String, PathBuf),
-    Rename(fuse_rename_in, String, String),
-    Link(fuse_link_in, String),
+    Symlink(OsString, PathBuf),
+    Rename(fuse_rename_in, OsString, OsString),
+    Link(fuse_link_in, OsString),
     Open(fuse_open_in),
     Read(fuse_read_in),
     Write(fuse_write_in, Vec<u8>),
@@ -44,7 +46,7 @@ pub(crate) enum FuseRequestBody {
     SetXAttr(fuse_setxattr_in),
     GetXAttr(fuse_getxattr_in),
     ListXAttr(fuse_getxattr_in),
-    RemoveXAttr(String),
+    RemoveXAttr(OsString),
     Access(fuse_access_in),
     Create(fuse_open_in),
     GetLock(fuse_lk_in),
@@ -52,10 +54,10 @@ pub(crate) enum FuseRequestBody {
     Bmap(fuse_bmap_in),
 
     #[cfg(target_os = "macos")]
-    SetVolumeName(String),
+    SetVolumeName(OsString),
 
     #[cfg(target_os = "macos")]
-    Exchange(fuse_exchange_in, String, String),
+    Exchange(fuse_exchange_in, OsString, OsString),
 
     #[cfg(target_os = "macos")]
     GetXTimes(),

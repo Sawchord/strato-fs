@@ -8,6 +8,7 @@ edition = "2018"
 fuse-sys = {path = "../rust-fuse/fuse-sys", version="0.4.0-alpha"}
 futures = "0.1"
 tokio = "0.1"
+bytes = "0.4"
 
 [dev-dependencies]
 env_logger = "0.6"
