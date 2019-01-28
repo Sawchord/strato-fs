@@ -112,7 +112,7 @@ impl Filesystem for Driver {
             offset,
             size,
             reply
-        });
+        }).unwrap();
 //        let handle = get_handle!(self, ino, reply);
 //        let result = match handle.write().dispatch() {
 //            RegularFile(ref mut file) => {

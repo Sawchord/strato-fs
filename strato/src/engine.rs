@@ -137,7 +137,7 @@ impl<'a> Engine<'a> {
 
             match event {
 
-                ChannelEvent::Read{req, ino, fh, offset, size, reply} => {
+                ChannelEvent::Read{req, ino, fh: _fh, offset, size, reply} => {
                     let handle = get_handle!(registry, ino, reply);
                     let file_op = match handle.write().dispatch() {
                         RegularFile(ref mut file) => {
