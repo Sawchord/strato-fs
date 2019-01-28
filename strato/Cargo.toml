@@ -1,0 +1,17 @@
+[package]
+name = "strato"
+version = "0.1.0"
+authors = ["Leon Tan <leon.arian.tan@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+fuse = "0.3"
+futures = "0.1"
+tokio = "0.1"
+parking_lot = "0.7"
+libc = "0.2.47"
+time = "0.1"
+
+
+[dev-dependencies]
+env_logger = "0.6.0"

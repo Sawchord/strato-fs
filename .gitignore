@@ -3,4 +3,5 @@
 Cargo.lock
 *.iml
 .idea
+.vscode
 ./test_dir
