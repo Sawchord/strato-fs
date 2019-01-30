@@ -5,7 +5,7 @@ extern crate log;
 
 
 mod error;
-mod codec;
+mod decoder;
 mod request;
 
 

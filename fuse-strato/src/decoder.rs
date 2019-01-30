@@ -16,19 +16,12 @@ use fuse_sys::abi::fuse_opcode::*;
 use crate::request::{FuseRequest, FuseRequestBody};
 use crate::request::FuseRequestBody::*;
 
-pub(crate) enum FuseRequestDecoder {
-    DecodingHeader(),
-    DecodingBody(usize),
-}
+pub(crate) struct FuseRequestDecoder;
 
 impl FuseRequestDecoder {
 
     pub(crate) fn new() -> Self {
-        FuseRequestDecoder::DecodingHeader()
-    }
-
-    pub(crate) fn init(&mut self) {
-       *self = FuseRequestDecoder::DecodingHeader()
+        FuseRequestDecoder
     }
 
 }
@@ -254,11 +247,15 @@ pub fn fetch_path(src: &mut BytesMut) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
+    use bytes::{BytesMut, BufMut};
+
+    use fuse_sys::abi::*;
+    use fuse_sys::abi::consts::*;
+    use fuse_sys::abi::fuse_opcode::*;
 
     #[test]
     fn fetch() {
         use super::*;
-        use bytes::{BytesMut, BufMut};
 
         #[derive(Debug, Clone, PartialEq)]
         struct TestStruct{
@@ -278,7 +275,6 @@ mod tests {
         };
         // Let buf go out of scope to test, that the fetched value persists
 
-        println!("{:x?}", ts);
         assert_eq!(ts, TestStruct { buff: 0x66667542, er: 0x20207265 });
 
     }
@@ -286,7 +282,6 @@ mod tests {
     #[test]
     fn fetch_str() {
         use super::*;
-        use bytes::{BytesMut, BufMut};
 
         let s = {
             let mut buf = BytesMut::with_capacity(64);
@@ -304,7 +299,6 @@ mod tests {
     #[test]
     fn fetch_path() {
         use super::*;
-        use bytes::{BytesMut, BufMut};
 
         let p = {
             let mut buf = BytesMut::with_capacity(64);
@@ -318,4 +312,76 @@ mod tests {
         assert_eq!(p, PathBuf::from("/dev/fuse"));
     }
 
+
+    fn create_fuse_header(opcode: fuse_opcode, len: usize) -> fuse_in_header {
+        use rand::random;
+        fuse_in_header {
+            len: len as u32,
+            opcode: opcode as u32,
+            unique: random(),
+            nodeid: random(),
+            uid: random(),
+            gid: random(),
+            pid: random(),
+            padding: 0
+        }
+    }
+
+    fn build_fuse_header_from_body<T>(opcode: fuse_opcode, _body: &T) -> fuse_in_header {
+        use std::mem::size_of;
+        let len = size_of::<fuse_in_header>() + size_of::<T>();
+        create_fuse_header(opcode, len)
+    }
+
+    fn build_fuse_header(opcode: fuse_opcode) -> fuse_in_header {
+        use std::mem::size_of;
+        let len = size_of::<fuse_in_header>();
+        create_fuse_header(opcode, len)
+    }
+
+
+
+    fn as_u8_slice<T: Sized>(p: &T) -> &[u8] {
+        use std::slice::from_raw_parts;
+        use std::mem::size_of;
+        unsafe {
+            from_raw_parts(p as *const T as *const u8, size_of::<T>())
+        }
+    }
+
+    fn serialize_fuse_request(header: &fuse_in_header) -> Vec<u8> {
+        let bytes = as_u8_slice(header);
+        Vec::from(bytes)
+    }
+
+    fn serialize_fuse_request_with_body<T>(header: &fuse_in_header, body: &T) -> Vec<u8> {
+
+        let header_bytes = as_u8_slice(header);
+        let body_bytes = as_u8_slice(body);
+
+        let mut vec = Vec::from(header_bytes);
+        vec.append(&mut Vec::from(body_bytes));
+        vec
+    }
+
+    #[test]
+    fn get_attr() {
+        use super::*;
+
+        let header = build_fuse_header(FUSE_GETATTR);
+        let body = GetAttr();
+        let bytes = serialize_fuse_request(&header);
+        let req = FuseRequest::new(
+            header,
+            body,
+        );
+
+        let mut buf = BytesMut::with_capacity(128);
+        buf.put_slice(&bytes);
+
+        let mut decoder = FuseRequestDecoder::new();
+
+        let bytes = decoder.decode(&mut buf).unwrap().unwrap();
+        assert_eq!(bytes, req);
+    }
 }

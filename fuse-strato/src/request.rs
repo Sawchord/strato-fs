@@ -6,7 +6,7 @@ use fuse_sys::abi::*;
 use fuse_sys::abi::consts::*;
 use fuse_sys::abi::fuse_opcode::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct FuseRequest  {
     header: fuse_in_header,
     body: FuseRequestBody,
@@ -19,7 +19,7 @@ impl FuseRequest {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum FuseRequestBody {
     Init(fuse_init_in),
     Destroy(),
