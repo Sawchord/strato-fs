@@ -413,11 +413,28 @@ mod tests {
         let header = build_fuse_header(FUSE_GETATTR);
         let body = GetAttr();
         let bytes = serialize_fuse_request(&header);
-        let req = FuseRequest::new(
-            header,
-            body,
-        );
-        dbg!(&req);
+        let req = FuseRequest::new(header, body);
+
+        decode_and_compare(bytes, req);
+    }
+
+    #[test]
+    fn read() {
+        use super::*;
+        use rand::random;
+
+        let bod = fuse_read_in {
+            fh: random(),
+            offset: random(),
+            size: random(),
+            padding: 0
+        };
+        let header = build_fuse_header_from_body(FUSE_READ, &bod);
+
+        let bytes = serialize_fuse_request_with_body(&header, &bod);
+
+        let body = Read(bod);
+        let req = FuseRequest::new(header, body);
 
         decode_and_compare(bytes, req);
     }
@@ -439,10 +456,7 @@ mod tests {
         let bytes = serialize_fuse_request_with_body(&header, &bod);
 
         let body = ReadDir(bod);
-        let req = FuseRequest::new(
-            header,
-            body,
-        );
+        let req = FuseRequest::new(header, body);
 
         dbg!(&req);
         decode_and_compare(bytes, req);
