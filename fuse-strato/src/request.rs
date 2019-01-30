@@ -34,7 +34,6 @@ pub(crate) enum FuseRequestBody {
     MkDir(OsString),
     Unlink(OsString),
     RmDir(OsString),
-    // TODO: Implement Path
     Symlink(OsString, PathBuf),
     Rename(fuse_rename_in, OsString, OsString),
     Link(fuse_link_in, OsString),

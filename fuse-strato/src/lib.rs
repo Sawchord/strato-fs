@@ -3,16 +3,5 @@
 #[macro_use]
 extern crate log;
 
-
-mod error;
 mod decoder;
 mod request;
-
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

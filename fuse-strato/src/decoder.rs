@@ -37,7 +37,7 @@ impl Decoder for FuseRequestDecoder {
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<FuseRequest>, Error> {
 
-        if src.len() > size_of::<fuse_in_header>() {
+        if src.len() < size_of::<fuse_in_header>() {
             return Err(Error::new(InvalidInput, "The header was to short"));
         }
 
@@ -247,6 +247,8 @@ pub fn fetch_path(src: &mut BytesMut) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
+    use std::mem::size_of;
+
     use bytes::{BytesMut, BufMut};
 
     use fuse_sys::abi::*;
@@ -327,23 +329,23 @@ mod tests {
         }
     }
 
-    fn build_fuse_header_from_body<T>(opcode: fuse_opcode, _body: &T) -> fuse_in_header {
-        use std::mem::size_of;
-        let len = size_of::<fuse_in_header>() + size_of::<T>();
-        create_fuse_header(opcode, len)
-    }
-
     fn build_fuse_header(opcode: fuse_opcode) -> fuse_in_header {
-        use std::mem::size_of;
         let len = size_of::<fuse_in_header>();
         create_fuse_header(opcode, len)
     }
 
+    fn build_fuse_header_from_body<T>(opcode: fuse_opcode, _body: &T) -> fuse_in_header {
+        let len = size_of::<fuse_in_header>() + size_of::<T>();
+        create_fuse_header(opcode, len)
+    }
 
+    fn build_fuse_header_from_str(opcode: fuse_opcode, s: &std::ffi::OsString) -> fuse_in_header {
+        let len = size_of::<fuse_in_header>() + s.len();
+        create_fuse_header(opcode, len)
+    }
 
     fn as_u8_slice<T: Sized>(p: &T) -> &[u8] {
         use std::slice::from_raw_parts;
-        use std::mem::size_of;
         unsafe {
             from_raw_parts(p as *const T as *const u8, size_of::<T>())
         }
@@ -364,8 +366,48 @@ mod tests {
         vec
     }
 
+    fn append_os_str(vec: &mut Vec<u8>, s: &std::ffi::OsString) {
+        vec.append(unsafe { s.clone().into_string().unwrap().as_mut_vec() } );
+        vec.push(0);
+    }
+
+    fn decode_and_compare(bytes: Vec<u8>, req: crate::request::FuseRequest) {
+        use super::*;
+
+        let mut buf = BytesMut::with_capacity(16 * 1024 * 1024);
+        buf.put_slice(&bytes);
+        let mut decoder = FuseRequestDecoder::new();
+
+        hexdump::hexdump(&buf);
+        let decoded_req = decoder.decode(&mut buf).unwrap().unwrap();
+        dbg!(&decoded_req);
+
+        assert_eq!(decoded_req, req);
+
+    }
+
     #[test]
-    fn get_attr() {
+    fn lookup() {
+        use super::*;
+        use std::ffi::OsString;
+
+        let bod = OsString::from("/test/this/call");
+        let header = build_fuse_header_from_str(FUSE_LOOKUP, &bod);
+        let mut bytes = serialize_fuse_request(&header);
+        append_os_str(&mut bytes, &bod);
+
+        let body = Lookup(bod);
+        let req = FuseRequest::new(
+            header,
+            body,
+        );
+        dbg!(&req);
+
+        decode_and_compare(bytes, req);
+    }
+
+    #[test]
+    fn getattr() {
         use super::*;
 
         let header = build_fuse_header(FUSE_GETATTR);
@@ -375,13 +417,36 @@ mod tests {
             header,
             body,
         );
+        dbg!(&req);
 
-        let mut buf = BytesMut::with_capacity(128);
-        buf.put_slice(&bytes);
-
-        let mut decoder = FuseRequestDecoder::new();
-
-        let bytes = decoder.decode(&mut buf).unwrap().unwrap();
-        assert_eq!(bytes, req);
+        decode_and_compare(bytes, req);
     }
+
+    #[test]
+    fn readdir() {
+        use super::*;
+        use rand::random;
+        use std::ffi::OsString;
+
+        let bod = fuse_read_in {
+            fh: random(),
+            offset: random(),
+            size: random(),
+            padding: 0
+        };
+        let header = build_fuse_header_from_body(FUSE_READDIR, &bod);
+
+        let bytes = serialize_fuse_request_with_body(&header, &bod);
+
+        let body = ReadDir(bod);
+        let req = FuseRequest::new(
+            header,
+            body,
+        );
+
+        dbg!(&req);
+        decode_and_compare(bytes, req);
+    }
+
+
 }
