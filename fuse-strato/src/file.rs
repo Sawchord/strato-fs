@@ -31,7 +31,7 @@ pub enum FileType {
 // But others like macOS x86_64 have mode_t = u16, requiring a typecast.  So, just silence lint.
 #[allow(trivial_numeric_casts)]
 /// Returns the mode for a given file kind and permission
-fn mode_from_kind_and_perm(kind: &FileType, perm: u16) -> u32 {
+pub(crate) fn mode_from_kind_and_perm(kind: &FileType, perm: u16) -> u32 {
     (match kind {
         FileType::NamedPipe => S_IFIFO,
         FileType::CharDevice => S_IFCHR,
