@@ -136,55 +136,72 @@ pub fn bmap(block: u64) -> fuse_bmap_out {
 
 
 
-#[repr(C)]
 #[derive(Debug, Clone, PartialEq)]
-pub struct DirEntry {
-    entry: fuse_dirent,
-    name: OsString,
-}
+pub struct DirReply(Vec<u8>);
 
-impl DirEntry {
-    pub(crate) fn to_vec(self) -> Vec<u8> {
+impl DirReply {
+    pub fn new() -> Self {
+        DirReply(Vec::new())
+    }
+
+    pub fn entry<T: Into<PathBuf>>(&mut self, ino: u64, offset: i64, kind: FileType, name: T) {
         use std::mem::size_of;
         use std::slice::from_raw_parts;
 
+        let pb = name.into().as_os_str().to_owned();
+
         // Calculate the length of the entry with padding
-        let entry_len = size_of::<fuse_dirent>() + self.name.len();
+        let entry_len = size_of::<fuse_dirent>() + pb.len();
         let len = (entry_len + 0b111) & !0b111;
         let pad_size = len - entry_len;
 
-        let mut ret = Vec::with_capacity(len);
-
-
         let mut some_vec = unsafe{
-            from_raw_parts(&self.entry as *const fuse_dirent as *const u8,
+            from_raw_parts( &fuse_dirent {
+                ino,
+                off: offset,
+                namelen: pb.len() as u32,
+                typ: mode_from_kind_and_perm(&kind, 0) >> 12,
+            } as *const fuse_dirent as *const u8,
                            size_of::<fuse_dirent>())
         }.to_vec();
-        ret.append(&mut some_vec);
 
-        let mut name = self.name.into_boxed_os_str().as_ref().as_bytes().to_vec();
-        ret.append(&mut name);
+        self.0.append(&mut some_vec);
 
-        for _ in 0..pad_size { ret.push(0); }
+        let mut name = pb.into_boxed_os_str().as_ref().as_bytes().to_vec();
+        self.0.append(&mut name);
 
-        ret
+        for _ in 0..pad_size { self.0.push(0); }
+
     }
+
+    pub(crate) fn to_vec(self) -> Vec<u8> {
+        self.0
+    }
+
 }
 
 
-pub fn dir_entry<T: Into<PathBuf>>(ino: u64, offset: i64, kind: FileType, name: T) -> DirEntry {
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    //let pb = name.into().into_boxed_path().as_os_str().to_owned();
-    let pb = name.into().as_os_str().to_owned();
+    #[test]
+    fn dir_reply() {
 
-    DirEntry{
-        entry: fuse_dirent{
-            ino,
-            off: offset,
-            namelen: pb.len() as u32,
-            typ: mode_from_kind_and_perm(&kind, 0) >> 12,
-        },
-        name: pb,
+        let mut dir_reply = DirReply::new();
+
+        dir_reply.entry(1, 0, FileType::Directory, "test_dir");
+        dir_reply.entry(2, 4096, FileType::RegularFile, "test_file");
+
+
+        let vec = dir_reply.to_vec();
+        hexdump::hexdump(&vec);
+
+        assert_eq!(vec, vec![1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 4, 0, 0, 0,
+                             116, 101, 115, 116, 95, 100, 105, 114, 2, 0, 0, 0, 0, 0, 0, 0, 0, 16,
+                             0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 8, 0, 0, 0, 116, 101, 115, 116, 95, 102,
+                             105, 108, 101, 0, 0, 0, 0, 0, 0, 0]);
+
     }
-}
 
+}
