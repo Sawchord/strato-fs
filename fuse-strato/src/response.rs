@@ -13,7 +13,7 @@ use crate::file::{system_time_decompose, fuse_attr_from_attr};
 use crate::file::mode_from_kind_and_perm;
 
 // For ReplyEmpty, as we can use ()
-// ReplyData as we can use Vec<u8>
+// For ReplyData as we can use Vec<u8>
 // For XAttr we can use Vec<u8>
 
 pub fn entry(ttl: &SystemTime, attr: &FileAttr, generation: u64) -> fuse_entry_out {
@@ -111,7 +111,7 @@ pub fn create(ttl: &SystemTime, attr: &FileAttr, generation: u64,
     fuse_open_out {
         fh,
         open_flags: flags,
-        padding:0,
+        padding: 0,
     })
 }
 
@@ -145,12 +145,29 @@ pub struct DirEntry {
 
 impl DirEntry {
     pub(crate) fn to_vec(self) -> Vec<u8> {
+        use std::mem::size_of;
+        use std::slice::from_raw_parts;
 
-        let name = self.name.into_boxed_os_str().as_ref().as_bytes();
+        // Calculate the length of the entry with padding
+        let entry_len = size_of::<fuse_dirent>() + self.name.len();
+        let len = (entry_len + 0b111) & !0b111;
+        let pad_size = len - entry_len;
 
-        // TODO
+        let mut ret = Vec::with_capacity(len);
 
-        vec![1,2,3]
+
+        let mut some_vec = unsafe{
+            from_raw_parts(&self.entry as *const fuse_dirent as *const u8,
+                           size_of::<fuse_dirent>())
+        }.to_vec();
+        ret.append(&mut some_vec);
+
+        let mut name = self.name.into_boxed_os_str().as_ref().as_bytes().to_vec();
+        ret.append(&mut name);
+
+        for _ in 0..pad_size { ret.push(0); }
+
+        ret
     }
 }
 
