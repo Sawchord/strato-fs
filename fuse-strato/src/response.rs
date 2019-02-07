@@ -181,6 +181,59 @@ impl DirReply {
 }
 
 
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum FuseResponseBody {
+    Init(),
+    Destroy(),
+    /// Unimplemented
+    Interrupt(),
+    Lookup(fuse_entry_out),
+    Forget(),
+    GetAttr(fuse_attr_out),
+    SetAttr(),
+    ReadLink(Vec<u8>),
+    MkNod(fuse_entry_out),
+    MkDir(fuse_entry_out),
+    Unlink(),
+    RmDir(),
+    Symlink(fuse_entry_out),
+    Rename(),
+    Link(fuse_entry_out),
+    Open(fuse_open_out),
+    Read(Vec<u8>),
+    Write(fuse_write_out),
+    Flush(),
+    Release(),
+    FSync(),
+    OpenDir(fuse_open_out),
+    ReadDir(DirReply),
+    ReleaseDir(),
+    FSyncDir(),
+    StatFS(fuse_statfs_out),
+    SetXAttr(),
+    GetXAttr(Vec<u8>),
+    ListXAttr(Vec<u8>),
+    RemoveXAttr(),
+    Access(),
+    Create(fuse_entry_out, fuse_open_out),
+    GetLock(fuse_lk_out),
+    SetLock(),
+    Bmap(fuse_bmap_out),
+
+    #[cfg(target_os = "macos")]
+    SetVolumeName(),
+
+    #[cfg(target_os = "macos")]
+    Exchange(),
+
+    /// Unimplemented
+    #[cfg(target_os = "macos")]
+    GetXTimes(),
+
+}
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;

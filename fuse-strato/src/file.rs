@@ -87,7 +87,7 @@ pub(crate) fn fuse_attr_from_attr(attr: &FileAttr) -> fuse_attr {
     fuse_attr {
         ino: attr.ino,
         size: attr.size,
-        blocks: time.blocks,
+        blocks: attr.blocks,
         atime: atime_s,
         mtime: mtime_s,
         ctime: ctime_s,

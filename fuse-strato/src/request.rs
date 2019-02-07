@@ -23,7 +23,7 @@ impl FuseRequest {
 pub(crate) enum FuseRequestBody {
     Init(fuse_init_in),
     Destroy(),
-    // TODO: Unimplemented
+    /// Unimplemented
     Interrupt(),
     Lookup(OsString),
     Forget(fuse_forget_in),
