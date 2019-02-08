@@ -180,6 +180,29 @@ impl DirReply {
 
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct FuseResponse {
+    header: fuse_out_header,
+    body: FuseResponseBody
+}
+
+impl FuseResponse {
+    pub(crate) fn new(header: fuse_out_header, body: FuseResponseBody) -> Self {
+        FuseResponse {
+            header,
+            body,
+        }
+    }
+
+    pub(crate) fn get_header(&self) -> &fuse_out_header {
+        &self.header
+    }
+
+    pub(crate) fn get_body(&self) -> &FuseResponseBody {
+        &self.body
+    }
+}
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum FuseResponseBody {
