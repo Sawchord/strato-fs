@@ -45,27 +45,59 @@ impl Encoder for FuseResponseEncoder {
 
             // These are the responses, that do not have a response body/
             // The header is simply written out
-            Init() | Destroy()
+            Init() | Destroy() | Forget() | SetAttr() | Unlink() | RmDir() | Rename() | Flush() |
+            Release() | FSync() | ReleaseDir() | FSyncDir() | Access() | SetLock()
             => {
                 dst.reserve(size_of::<fuse_out_header>());
                 dst.put_slice(as_u8_slice(item.get_header()));
-                ()
+            },
+
+            // Empty responses which are only implemented for mac OS
+            #[cfg (target_os = "macos")]
+            SetVolumeName() | Exchange()
+            => {
+                dst.reserve(size_of::<fuse_out_header>());
+                dst.put_slice(as_u8_slice(item.get_header()));
             },
 
 
             Interrupt() =>
                 return Err(Error::new(Other, "Interrupting is not implemented")),
 
+            #[cfg (target_os = "macos")]
+            GetXTimes() =>
+                return Err(Error::new(Other, "GetXTimes is not implemented")),
 
-            // These are the responses that respond with an Entry
-            // We need to write the header as well as the the entry
-            Lookup(body) => {
+
+            // These responses respond with an Entry
+            Lookup(body) | MkNod(body) | MkDir(body) | Symlink(body)
+            => {
                 dst.reserve(size_of::<fuse_out_header>() + size_of::<fuse_entry_out>());
                 dst.put_slice(as_u8_slice(item.get_header()));
                 dst.put_slice(as_u8_slice(body));
             },
 
+            // These responses answer with an open_out
+            Open(body) | OpenDir(body)
+            => {
+            dst.reserve(size_of::<fuse_out_header>() + size_of::<fuse_open_out>());
+            dst.put_slice(as_u8_slice(item.get_header()));
+            dst.put_slice(as_u8_slice(body));
+            },
 
+
+            // These responses have a variable length vector
+            ReadLink(data) | Read(data) | GetXAttr(data) | ListXAttr(data)
+            => {
+                dst.reserve(size_of::<fuse_out_header>() + data.len());
+                dst.put_slice(as_u8_slice(item.get_header()));
+                dst.put_slice(&data);
+            }
+
+
+            // TODO: ReadDir
+            // TODO: Create
+            // TODO: StatFs
             _ => return Err(Error::new(Other, "This Response is unimplemented")),
         }
 
@@ -86,6 +118,7 @@ fn as_u8_slice<T: Sized>(p: &T) -> &[u8] {
 mod tests {
     use std::mem::size_of;
     use std::time::{SystemTime, Duration};
+    use std::vec::Vec;
 
     use bytes::{BytesMut, BufMut};
 
@@ -106,10 +139,29 @@ mod tests {
     }
 
     fn build_fuse_header_from_body<T>(error: i32, _body: &T) -> fuse_out_header {
-        let len = size_of::<fuse_in_header>() + size_of::<T>();
+        let len = size_of::<fuse_out_header>() + size_of::<T>();
         create_fuse_header(error, len as u32)
     }
 
+    fn build_fuse_header_from_vec(error: i32 , vec: &Vec<u8>) -> fuse_out_header {
+        let len = size_of::<fuse_out_header>() + vec.len();
+        create_fuse_header(error, len as u32)
+    }
+
+    fn serialize_fuse_request(header: &fuse_out_header) -> Vec<u8> {
+        let bytes = as_u8_slice(header);
+        Vec::from(bytes)
+    }
+
+    fn serialize_fuse_request_with_body<T>(header: &fuse_out_header, body: &T) -> Vec<u8> {
+
+        let header_bytes = as_u8_slice(header);
+        let body_bytes = as_u8_slice(body);
+
+        let mut vec = Vec::from(header_bytes);
+        vec.append(&mut Vec::from(body_bytes));
+        vec
+    }
 
     /// Generate a duration withing a scope, given in seconds
     fn random_duration(scope: u64) -> Duration {
@@ -154,23 +206,72 @@ mod tests {
 
     #[test]
     fn lookup() {
-        let mut buf = BytesMut::with_capacity(128);
+        let mut buf = BytesMut::new();
         let mut encoder = FuseResponseEncoder::new();
 
         let entry_out = build_entry_out();
         let header = build_fuse_header_from_body(0, &entry_out);
         let body = Lookup(entry_out.clone());
 
-        let response = FuseResponse::new(
-            header.clone(),
-            body,
-        );
+        let response = FuseResponse::new(header.clone(), body);
 
-        encoder.encode(response, &mut buf);
-
+        encoder.encode(response, &mut buf).expect("lookup: Error in Encoder");
         hexdump::hexdump(&buf);
 
-        assert_eq!(0, 1);
+        let bytes = serialize_fuse_request_with_body(&header, &entry_out);
+
+        assert_eq!(&buf, &bytes);
     }
+
+    #[test]
+    fn open() {
+        use rand::random;
+        let mut buf = BytesMut::new();
+
+        // Test, that buf also holds bytes after inner objects go out of scope
+        let bytes = {
+            let mut encoder = FuseResponseEncoder::new();
+
+            let open_out = fuse_open_out {
+                fh: random(),
+                open_flags: random(),
+                padding: 0,
+            };
+
+            let header = build_fuse_header_from_body(0, &open_out);
+            let body = Open(open_out.clone());
+
+            let response = FuseResponse::new(header.clone(), body);
+
+            encoder.encode(response,&mut buf).expect("open: Error in Encoder");
+            hexdump::hexdump(&buf);
+
+            serialize_fuse_request_with_body(&header, &open_out)
+        };
+
+        assert_eq!(&buf, &bytes);
+    }
+
+    #[test]
+    fn read() {
+        let mut buf = BytesMut::new();
+        let mut encoder = FuseResponseEncoder::new();
+
+        let mut vec = "This is data to be read".into();
+
+        let header = build_fuse_header_from_vec(0, &vec);
+        let body  = Read(vec.clone());
+
+        let response = FuseResponse::new(header.clone(), body);
+
+        encoder.encode(response, &mut buf).expect("read: Error in Encoder");
+        hexdump::hexdump(&buf);
+
+        let mut bytes = serialize_fuse_request(&header);
+        bytes.append(&mut vec);
+
+        assert_eq!(&buf, &bytes);
+    }
+
 
 }
